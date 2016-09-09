@@ -2,11 +2,14 @@
     "compilerOptions": {
         "target": "es6",
         "module": "commonjs",
+        "declaration": true,
         "strictNullChecks": true,
-        "outDir": "built",
+        "outDir": "lib",
         "rootDir": "."
     },
-    "exclude": [
-        "node_modules"
+    "files": [
+        "./index.ts",
+        "./index.test.ts",
+        "./typings/index.d.ts"
     ]
 }

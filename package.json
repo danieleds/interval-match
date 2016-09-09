@@ -1,11 +1,12 @@
 {
   "name": "interval-match",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
+  "typings": "lib/index",
   "scripts": {
     "build": "tsc",
-    "test": "mocha -R spec built/*.test.js"
+    "test": "mocha -R spec lib/*.test.js"
   },
   "author": "",
   "license": "MIT",
@@ -13,5 +14,8 @@
     "assert6": "^1.0.1",
     "mocha": "^3.0.2",
     "typescript": "^2.0.2"
-  }
+  },
+  "files": [
+    "lib/"
+  ]
 }

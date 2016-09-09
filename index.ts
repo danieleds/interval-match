@@ -9,7 +9,7 @@ export interface Pattern {
     // reserved for extra options
 }
 
-interface Constraint {
+export interface Constraint {
     interval: IntervalPattern,
     followingSpace: SpacePattern | null
 }
@@ -48,7 +48,7 @@ export interface SpacePattern {
 /**
  * Specify a validity range for an interval endpoint.
  */
-interface Endpoint {
+export interface Endpoint {
     /**
      * Lower bound. If null, there is no lower bound.
      */

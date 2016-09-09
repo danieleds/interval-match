@@ -1,3 +1,4 @@
 /.vscode
 /built
 /node_modules
+/lib
