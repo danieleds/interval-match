@@ -12,7 +12,7 @@ $ npm install --save interval-match
 
 ## Introduction
 
-Intervals are objects which define their position and their payload. For example, this is an interval:
+Intervals are objects which define their position and a payload. For example, this is an interval:
 
 ```js
 {
