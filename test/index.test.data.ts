@@ -82,4 +82,14 @@ export const test_data_1: {v1: Pattern, v2: Interval[], r: Result}[] = [
         v2: [{from: 0, to: 500, data: 'u'}],
         r: new Map([["A", {from: 0, to: 500, data: 'u'}]])
     },
+    { // followingSpace should be half the size of its preceding interval. Intervals match.
+        v1: { constraints: [{interval: {name: "A", from: null, to: null, minSize: 0, maxSize: Infinity}, followingSpace: {name: "B", minSize: 'A * 0.5', maxSize: 'A * 0.5'}}] },
+        v2: [{from: 40, to: 60, data: 'u'}, {from: 70, to: 100, data: 'u'}],
+        r: new Map([["A", {from: 40, to: 60, data: 'u'}], ["B", {from: 60, to: 70, data: undefined!}]])
+    },
+    { // followingSpace should be half the size of its preceding interval. Intervals wrong.
+        v1: { constraints: [{interval: {name: "A", from: null, to: null, minSize: 0, maxSize: Infinity}, followingSpace: {name: "B", minSize: 'A * 0.5', maxSize: 'A * 0.5'}}] },
+        v2: [{from: 40, to: 60, data: 'u'}, {from: 71, to: 100, data: 'u'}],
+        r: new Map()
+    },
 ]

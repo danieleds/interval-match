@@ -54,7 +54,7 @@ Factor
 
 Number "number"
   = [+-]?[0-9]+('.'[0-9]+)? {
-      let value = parseInt(text(), 10);
+      let value = parseFloat(text());
       return (env) => value;
     }
 

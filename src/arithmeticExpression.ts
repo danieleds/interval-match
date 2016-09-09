@@ -196,7 +196,7 @@ var parser = /*
         peg$c18 = ".",
         peg$c19 = peg$literalExpectation(".", false),
         peg$c20 = function() {
-              let value = parseInt(text(), 10);
+              let value = parseFloat(text());
               return (env) => value;
             },
         peg$c21 = peg$otherExpectation("variable"),

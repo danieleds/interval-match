@@ -172,6 +172,9 @@ export class IntervalMatch
         }
 
         if (constraint.followingSpace) {
+            // The constraint on the interval succeeded, so we add its length to the expression environment.
+            expressionEnv.set(constraint.interval.name, length(interval));
+
             const spaceInterval = {
                 from: interval.to,
                 to: nextInterval ? nextInterval.from : Infinity
