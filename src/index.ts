@@ -1,3 +1,5 @@
+import { ArithmeticExpression } from './arithmeticExpression'
+
 export interface Interval {
     from: number
     to: number
@@ -190,7 +192,12 @@ export class IntervalMatch
     }
 
     private static parseExpression(expr: number | string, env: Map<string, number>): number {
-        return +expr;
+        if (isNumber(expr)) {
+            return +expr;
+        } else {
+            const result = ArithmeticExpression.parse(expr, {});
+            return result(env);
+        }
     }
 }
 
