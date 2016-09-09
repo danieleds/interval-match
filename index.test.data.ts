@@ -68,4 +68,9 @@ export const test_data_1: {v1: Pattern, v2: Interval[], r: Result}[] = [
         v2: [{from: 7, to: 12, data: 'u'}, {from: 17, to: 20, data: 'x'}],
         r: new Map()
     },
+    {
+        v1: { constraints: [{interval: {name: "A", from: null, to: null, minSize: 2, maxSize: 20}, followingSpace: {name: "B", minSize: 10, maxSize: Infinity}}] },
+        v2: [{from: 0, to: 20, data: 'u'}, {from: 25, to: 30, data: 'x'}, {from: 40, to: 50, data: 'y'}],
+        r: new Map([["A", {from: 25, to: 30, data: 'x'}], ["B", {from: 30, to: 40, data: undefined!}]])
+    },
 ]

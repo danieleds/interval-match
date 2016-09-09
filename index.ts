@@ -105,12 +105,13 @@ export class IntervalMatch
 
             } else {
                 // No match; any previous matches were errors. Clear them and then keep searching.
+                currConstraintId = 0;
                 result.clear();
             }
         }
 
         // If we're here, we've not been able to match all the constraints.
-        return result;
+        return new Map();
     }
 
     private static satisfiesConstraint(interval: Interval, nextInterval: Interval | null, constraint: Constraint) {
