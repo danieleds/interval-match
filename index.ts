@@ -39,6 +39,9 @@ export interface IntervalPattern {
     maxSize: number
 }
 
+/**
+ * FIXME Docs
+ */
 export interface SpacePattern {
     name: string
     minSize: number
@@ -64,7 +67,7 @@ export class IntervalMatch
     /**
      * Return the first satisfied match.
      * @param intervals The set of non-overlapping intervals.
-     * @param ordered Set this to true if the provided intervals are already ordered.
+     * @param ordered Set this to true if the provided intervals are already ordered. // FIXME ordered how?
      */
     public static match(pattern: Pattern, intervals: Interval[], ordered = false): Result {
         if (pattern.constraints.length === 0 || intervals.length === 0) {
@@ -92,7 +95,8 @@ export class IntervalMatch
                 // Add it to the result
                 result.set(constraint.interval.name, interval);
                 if (constraint.followingSpace) {
-                    result.set(constraint.followingSpace.name, {from: interval.to, to: nextInterval ? nextInterval.from : Infinity, data: undefined});
+                    const spaceInterval = {from: interval.to, to: nextInterval ? nextInterval.from : Infinity, data: undefined};
+                    result.set(constraint.followingSpace.name, spaceInterval);
                 }
 
                 if (currConstraintId + 1 < pattern.constraints.length) {
@@ -114,6 +118,13 @@ export class IntervalMatch
         return new Map();
     }
 
+    /**
+     * Determine if a specified interval satisfies the provided constraint.
+     * @param interval      The interval to check.
+     * @param nextInterval  The interval following `interval`, if any. Otherwise, `null`. This parameter is
+     *                      used to verify the constraints on `constraint.followingSpace`.
+     * @param constraint    The constraint that needs to be tested.
+     */
     private static satisfiesConstraint(interval: Interval, nextInterval: Interval | null, constraint: Constraint) {
         // interval matches minSize constraint?
         if (length(interval) < constraint.interval.minSize) {
@@ -150,10 +161,9 @@ export class IntervalMatch
         }
 
         if (constraint.followingSpace) {
-            const spaceInterval: Interval = {
+            const spaceInterval = {
                 from: interval.to,
-                to: nextInterval ? nextInterval.from : Infinity,
-                data: undefined
+                to: nextInterval ? nextInterval.from : Infinity
             }
 
             // space respects minSize constraint?
@@ -171,6 +181,9 @@ export class IntervalMatch
     }
 }
 
-function length(interval: Interval) {
+/**
+ * Calculate the length of an interval.
+ */
+function length(interval: { from: number, to: number }) {
     return interval.to - interval.from;
 }
