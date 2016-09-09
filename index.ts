@@ -30,13 +30,19 @@ export interface IntervalPattern {
      */
     to: Endpoint | null
     /**
-     * Minimum size of the interval
+     * Minimum size of the interval.
+     * If a string, it is an expression which defines the minimum size of the interval.
+     * Any preceding matches can be used in the expression with their name as identifiers.
+     * // FIXME Better doc with example
      */
-    minSize: number
+    minSize: number | string
     /**
-     * Maximum size of the interval
+     * Maximum size of the interval.
+     * If a string, it is an expression which defines the maximum size of the interval.
+     * Any preceding matches can be used in the expression with their name as identifiers.
+     * // FIXME Better doc with example
      */
-    maxSize: number
+    maxSize: number | string
 }
 
 /**
@@ -44,8 +50,8 @@ export interface IntervalPattern {
  */
 export interface SpacePattern {
     name: string
-    minSize: number
-    maxSize: number
+    minSize: number | string
+    maxSize: number | string
 }
 
 /**
@@ -89,7 +95,7 @@ export class IntervalMatch
             const constraint = pattern.constraints[currConstraintId];
 
             // Check if this interval satisfies the current constraint
-            const matches = IntervalMatch.satisfiesConstraint(interval, nextInterval, constraint);
+            const matches = IntervalMatch.satisfiesConstraint(interval, nextInterval, constraint, result);
 
             if (matches) {
                 // Add it to the result
@@ -120,19 +126,22 @@ export class IntervalMatch
 
     /**
      * Determine if a specified interval satisfies the provided constraint.
-     * @param interval      The interval to check.
-     * @param nextInterval  The interval following `interval`, if any. Otherwise, `null`. This parameter is
-     *                      used to verify the constraints on `constraint.followingSpace`.
-     * @param constraint    The constraint that needs to be tested.
+     * @param interval          The interval to check.
+     * @param nextInterval      The interval following `interval`, if any. Otherwise, `null`. This parameter is
+     *                          used to verify the constraints on `constraint.followingSpace`.
+     * @param constraint        The constraint that needs to be tested.
+     * @param precedingMatches  The map of any preceding matches, which is used to verify expressions.
      */
-    private static satisfiesConstraint(interval: Interval, nextInterval: Interval | null, constraint: Constraint) {
+    private static satisfiesConstraint(interval: Interval, nextInterval: Interval | null, constraint: Constraint, precedingMatches: Result): boolean {
+        const expressionEnv = new Map([...precedingMatches].map(v => <[string, number]>[v[0], v[1].to - v[1].from]));
+
         // interval matches minSize constraint?
-        if (length(interval) < constraint.interval.minSize) {
+        if (length(interval) < IntervalMatch.parseExpression(constraint.interval.minSize, expressionEnv)) {
             return false;
         }
 
         // interval matches maxSize constraint?
-        if (length(interval) > constraint.interval.maxSize) {
+        if (length(interval) > IntervalMatch.parseExpression(constraint.interval.maxSize, expressionEnv)) {
             return false;
         }
 
@@ -167,23 +176,34 @@ export class IntervalMatch
             }
 
             // space respects minSize constraint?
-            if (length(spaceInterval) < constraint.followingSpace.minSize) {
+            if (length(spaceInterval) < IntervalMatch.parseExpression(constraint.followingSpace.minSize, expressionEnv)) {
                 return false;
             }
 
             // space respects maxSize constraint?
-            if (length(spaceInterval) > constraint.followingSpace.maxSize) {
+            if (length(spaceInterval) > IntervalMatch.parseExpression(constraint.followingSpace.maxSize, expressionEnv)) {
                 return false;
             }
         }
 
         return true;
     }
+
+    private static parseExpression(expr: number | string, env: Map<string, number>): number {
+        return +expr;
+    }
 }
 
 /**
  * Calculate the length of an interval.
  */
-function length(interval: { from: number, to: number }) {
+function length(interval: { from: number, to: number }): number {
     return interval.to - interval.from;
+}
+
+/**
+ * Check if the provided value has numeric type.
+ */
+function isNumber(n: any): boolean {
+    return (typeof n === 'number') || (n instanceof Number);
 }
