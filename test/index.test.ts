@@ -1,5 +1,5 @@
 const assert = require('assert6');
-import { IntervalMatch } from './index'
+import { IntervalMatch } from '../src/index'
 import * as data from './index.test.data'
 
 describe('IntervalMatch', () => {

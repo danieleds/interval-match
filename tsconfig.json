@@ -8,8 +8,8 @@
         "rootDir": "."
     },
     "files": [
-        "./index.ts",
-        "./index.test.ts",
-        "./typings/index.d.ts"
+        "src/index.ts",
+        "test/index.test.ts",
+        "typings/index.d.ts"
     ]
 }
