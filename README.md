@@ -94,9 +94,49 @@ const matches = IntervalMatch.match(pattern, intervals);
 ```
 
 ## Patterns
-<!--
-As we saw in the example, a pattern 
 
+As we saw in the example, a pattern is actually an array of rules, each of which is limited to a single interval. So, a sequence of rules describes how the succession of the intervals should look like.
+
+There are two types of rules: *IntervalRule* and *SpaceRule*. The first is applied to intervals, the second to the gaps between intervals.
+
+### IntervalRule
+
+```js
+{
+    name: 'A',
+    from: { lowerBound: 35, upperBound: 45 },
+    to: null,
+    minSize: 5,
+    maxSize: Infinity
+}
+```
+
+* **name:** string
+
+   The name to assign to the matched interval to identify it in the result. If it is in the form of an identifier (only letters, numbers and underscores, and doesn't start with a number) then it can be used in expressions (see below).
+   
+* **from:** Endpoint | null
+
+   If not null, defines where the interval should start. It takes an Endpoint, which is an object like the following, that you can use to specify the allowed range for the start of the interval:
+   
+   ```js
+   { lowerBound: number, upperBound: number }
+   ```
+
+* **to:** Endpoint | null
+
+   If not null, defines where the interval should end. See **from**.
+
+* **minSize:** number | string
+
+   Defines the minimum size of the interval. If it is a string, the value is interpreted as an arithmetic expression which:
+     * can use `+`, `-` and `*` operators (no division)
+     * can use any preceding matched name as a variable (e.g: `1.5 * (A + B) - 1`)
+
+* **maxSize:** number | string
+
+   Defines the maximum size of the interval. See **minSize**.
+<!--
 ## Current Limitations
 no overlapping intervals
 precedingSpace-->
