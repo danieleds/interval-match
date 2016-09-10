@@ -1,7 +1,9 @@
 # IntervalMatch
 
 [![npm version](https://badge.fury.io/js/interval-match.svg)](https://badge.fury.io/js/interval-match)
-<!-- [![npm version](https://img.shields.io/npm/v/interval-match.svg)](https://www.npmjs.com/package/interval-match) -->
+[![Build Status](https://travis-ci.org/danieleds/interval-match.svg?branch=master)](https://travis-ci.org/danieleds/interval-match)
+<!-- [![npm version](https://img.shields.io/npm/v/interval-match.svg?maxAge=2592000)](https://www.npmjs.com/package/interval-match)
+[![npm](https://img.shields.io/npm/dm/interval-match.svg?maxAge=2592000)]()-->
 
 This library allows you to match a set of intervals with various patterns.
 
