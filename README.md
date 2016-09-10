@@ -139,6 +139,19 @@ There are two types of rules: *IntervalRule* and *SpaceRule*. The first is appli
 * **maxSize:** number | string
 
    Defines the maximum size of the interval. See **minSize**.
+
+### SpaceRule
+
+```js
+{
+    name: 'B',
+    minSize: 'A * 0.5',
+    maxSize: 100
+}
+
+
+
+```
 <!--
 ## Current Limitations
 no overlapping intervals
