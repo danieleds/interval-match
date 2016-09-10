@@ -148,8 +148,11 @@ There are two types of rules: *IntervalRule* and *SpaceRule*. The first is appli
     minSize: 'A * 0.5',
     maxSize: 100
 }
+```
 
+* **name:** string
 
+   The name to assign to the matched gap to identify it in the result. See **IntervalRule.name** for more info.
 
 ```
 <!--
