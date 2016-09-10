@@ -154,7 +154,14 @@ There are two types of rules: *IntervalRule* and *SpaceRule*. The first is appli
 
    The name to assign to the matched gap to identify it in the result. See **IntervalRule.name** for more info.
 
-```
+* **minSize:** number | string
+
+   Defines the minimum size of the gap. See **IntervalRule.minSize** for more info.
+
+* **maxSize:** number | string
+
+   Defines the maximum size of the gap. See **IntervalRule.maxSize** for more info.
+
 <!--
 ## Current Limitations
 no overlapping intervals
