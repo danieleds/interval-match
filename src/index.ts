@@ -7,11 +7,6 @@ export interface Interval {
 }
 
 export interface Pattern {
-    constraints: Constraint[]
-    // reserved for extra options
-}
-
-export interface Constraint {
     interval: IntervalPattern,
     followingSpace: SpacePattern | null
 }
@@ -77,8 +72,8 @@ export class IntervalMatch
      * @param intervals The set of non-overlapping intervals.
      * @param ordered Set this to true if the provided intervals are already ordered. // FIXME ordered how?
      */
-    public static match(pattern: Pattern, intervals: Interval[], ordered = false): Result {
-        if (pattern.constraints.length === 0 || intervals.length === 0) {
+    public static match(patterns: Pattern[], intervals: Interval[], ordered = false): Result {
+        if (patterns.length === 0 || intervals.length === 0) {
             return new Map();
         }
 
@@ -94,10 +89,10 @@ export class IntervalMatch
         for (let i = 0; i < intervals.length; i++) {
             const interval = intervals[i];
             const nextInterval = i+1 < intervals.length ? intervals[i+1] : null;
-            const constraint = pattern.constraints[currConstraintId];
+            const constraint = patterns[currConstraintId];
 
             // Check if this interval satisfies the current constraint
-            const matches = IntervalMatch.satisfiesConstraint(interval, nextInterval, constraint, result);
+            const matches = IntervalMatch.satisfiesPattern(interval, nextInterval, constraint, result);
 
             if (matches) {
                 // Add it to the result
@@ -107,7 +102,7 @@ export class IntervalMatch
                     result.set(constraint.followingSpace.name, spaceInterval);
                 }
 
-                if (currConstraintId + 1 < pattern.constraints.length) {
+                if (currConstraintId + 1 < patterns.length) {
                     // More constraints to check; increment the id
                     currConstraintId++;
                 } else {
@@ -131,49 +126,49 @@ export class IntervalMatch
      * @param interval          The interval to check.
      * @param nextInterval      The interval following `interval`, if any. Otherwise, `null`. This parameter is
      *                          used to verify the constraints on `constraint.followingSpace`.
-     * @param constraint        The constraint that needs to be tested.
+     * @param pattern           The pattern that needs to be tested.
      * @param precedingMatches  The map of any preceding matches, which is used to verify expressions.
      */
-    private static satisfiesConstraint(interval: Interval, nextInterval: Interval | null, constraint: Constraint, precedingMatches: Result): boolean {
+    private static satisfiesPattern(interval: Interval, nextInterval: Interval | null, pattern: Pattern, precedingMatches: Result): boolean {
         const expressionEnv = new Map([...precedingMatches].map(v => <[string, number]>[v[0], v[1].to - v[1].from]));
 
         // interval matches minSize constraint?
-        if (length(interval) < IntervalMatch.parseExpression(constraint.interval.minSize, expressionEnv)) {
+        if (length(interval) < IntervalMatch.parseExpression(pattern.interval.minSize, expressionEnv)) {
             return false;
         }
 
         // interval matches maxSize constraint?
-        if (length(interval) > IntervalMatch.parseExpression(constraint.interval.maxSize, expressionEnv)) {
+        if (length(interval) > IntervalMatch.parseExpression(pattern.interval.maxSize, expressionEnv)) {
             return false;
         }
 
-        if (constraint.interval.from) {
+        if (pattern.interval.from) {
             // interval's left endpoint matches lowerBound constraint?
-            if (constraint.interval.from.lowerBound !== null && interval.from < constraint.interval.from.lowerBound) {
+            if (pattern.interval.from.lowerBound !== null && interval.from < pattern.interval.from.lowerBound) {
                 return false;
             }
 
             // interval's left endpoint matches upperBound constraint?
-            if (constraint.interval.from.upperBound !== null && interval.from > constraint.interval.from.upperBound) {
+            if (pattern.interval.from.upperBound !== null && interval.from > pattern.interval.from.upperBound) {
                 return false;
             }
         }
         
-        if (constraint.interval.to) {
+        if (pattern.interval.to) {
             // interval's right endpoint matches lowerBound constraint?
-            if (constraint.interval.to.lowerBound !== null && interval.to < constraint.interval.to.lowerBound) {
+            if (pattern.interval.to.lowerBound !== null && interval.to < pattern.interval.to.lowerBound) {
                 return false;
             }
 
             // interval's right endpoint matches upperBound constraint?
-            if (constraint.interval.to.upperBound !== null && interval.to > constraint.interval.to.upperBound) {
+            if (pattern.interval.to.upperBound !== null && interval.to > pattern.interval.to.upperBound) {
                 return false;
             }
         }
 
-        if (constraint.followingSpace) {
+        if (pattern.followingSpace) {
             // The constraint on the interval succeeded, so we add its length to the expression environment.
-            expressionEnv.set(constraint.interval.name, length(interval));
+            expressionEnv.set(pattern.interval.name, length(interval));
 
             const spaceInterval = {
                 from: interval.to,
@@ -181,12 +176,12 @@ export class IntervalMatch
             }
 
             // space respects minSize constraint?
-            if (length(spaceInterval) < IntervalMatch.parseExpression(constraint.followingSpace.minSize, expressionEnv)) {
+            if (length(spaceInterval) < IntervalMatch.parseExpression(pattern.followingSpace.minSize, expressionEnv)) {
                 return false;
             }
 
             // space respects maxSize constraint?
-            if (length(spaceInterval) > IntervalMatch.parseExpression(constraint.followingSpace.maxSize, expressionEnv)) {
+            if (length(spaceInterval) > IntervalMatch.parseExpression(pattern.followingSpace.maxSize, expressionEnv)) {
                 return false;
             }
         }
