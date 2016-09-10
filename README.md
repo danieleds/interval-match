@@ -49,34 +49,32 @@ import { IntervalMatch } from 'interval-match'
 //     - is half the size of them
 //  - and then by an interval which:
 //     - is smaller or equal to 30
-const pattern = {
-    constraints: [
-        {
-            interval: {
-                name: 'A',
-                from: { lowerBound: 35, upperBound: 45 },
-                to: null,
-                minSize: 5,
-                maxSize: Infinity
-            },
-            followingSpace: {
-                name: 'B',
-                minSize: 'A * 0.5',
-                maxSize: 'A * 0.5'
-            }
+const pattern = [
+    {
+        interval: {
+            name: 'A',
+            from: { lowerBound: 35, upperBound: 45 },
+            to: null,
+            minSize: 5,
+            maxSize: Infinity
         },
-        {
-            interval: {
-                name: 'C',
-                from: null,
-                to: null,
-                minSize: 0,
-                maxSize: 30
-            },
-            followingSpace: null
+        followingSpace: {
+            name: 'B',
+            minSize: 'A * 0.5',
+            maxSize: 'A * 0.5'
         }
-    ]
-}
+    },
+    {
+        interval: {
+            name: 'C',
+            from: null,
+            to: null,
+            minSize: 0,
+            maxSize: 30
+        },
+        followingSpace: null
+    }
+]
 
 // Our intervals
 const intervals = [
@@ -94,3 +92,11 @@ const matches = IntervalMatch.match(pattern, intervals);
 //       'B' => { from: 60, to: 70, data: undefined },
 //       'C' => { from: 70, to: 100, data: 'lemon' } }
 ```
+
+## Patterns
+<!--
+As we saw in the example, a pattern 
+
+## Current Limitations
+no overlapping intervals
+precedingSpace-->
