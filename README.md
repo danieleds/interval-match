@@ -98,7 +98,7 @@ const matches = IntervalMatch.match(pattern, intervals);
 
 ## Patterns
 
-As we saw in the example, a pattern is actually an array of rules, each of which is limited to a single interval. So, a sequence of rules describes how the succession of the intervals should look like.
+As we saw in the example, a pattern is actually an array of rules, each of which is focused on a single interval. So, a sequence of rules describes how the succession of the intervals should look like.
 
 There are two types of rules: *IntervalRule* and *SpaceRule*. The first is applied to intervals, the second to the gaps between intervals.
 
