@@ -48,7 +48,7 @@ import { IntervalMatch } from 'interval-match'
 //  - are followed by a space (the gap before the next interval) which:
 //     - is half the size of them
 //  - and then by an interval which:
-//     - is smaller than 30
+//     - is smaller or equal to 30
 const pattern = {
     constraints: [
         {
