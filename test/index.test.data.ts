@@ -1,6 +1,6 @@
-import { Pattern, Interval, Result } from '../src/index'
+import { Rule, Interval, Result } from '../src/index'
 
-export const test_data_1: {v1: Pattern[], v2: Interval[], r: Result}[] = [
+export const test_data_1: {v1: Rule[], v2: Interval[], r: Result}[] = [
     {
         v1: [{interval: {name: "A", from: null, to: null, minSize: 500, maxSize: 1000}, followingSpace: null}],
         v2: [{from: 0, to: 500, data: 'hello'}],

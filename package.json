@@ -1,15 +1,22 @@
 {
   "name": "interval-match",
   "version": "0.1.4",
-  "description": "",
+  "description": "Match a set of intervals with various patterns.",
+  "author": "Daniele Di Sarli <danieleds0@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/danieleds/interval-match"
+  },
+  "bugs": {
+    "url": "https://github.com/danieleds/interval-match/issues"
+  },
+  "license": "MIT",
   "main": "lib/src/index.js",
   "typings": "lib/src/index",
   "scripts": {
     "build": "tsc",
     "test": "mocha -R spec lib/test/*.test.js"
   },
-  "author": "",
-  "license": "MIT",
   "devDependencies": {
     "assert6": "^1.0.1",
     "mocha": "^3.0.2",
