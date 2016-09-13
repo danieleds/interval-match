@@ -1,4 +1,4 @@
-import * as Types from './types'
+import { Rule, Interval, Result } from './types'
 import { Common } from './common'
 
 export * from './types'
@@ -10,7 +10,7 @@ export module IntervalMatch
      * @param intervals The set of non-overlapping intervals.
      * @param ordered Set this to true if the provided intervals are already ordered. // FIXME ordered how?
      */
-    export function match(pattern: Types.Rule[], intervals: Types.Interval[], ordered = false): Types.Result {
+    export function match(pattern: Rule[], intervals: Interval[], ordered = false): Result {
         if (pattern.length === 0 || intervals.length === 0) {
             return new Map();
         }

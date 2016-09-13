@@ -1,5 +1,5 @@
 import { ArithmeticExpression } from './arithmeticExpression'
-import * as Types from './types'
+import { Rule, Interval, Result } from './types'
 
 export module Common
 {
@@ -9,9 +9,9 @@ export module Common
      * 
      * @param intervals The set of ORDERED non-overlapping intervals.
      */
-    export function tryMatch(pattern: Types.Rule[], intervals: Types.Interval[]) {
-        let longestMatchingChain: Types.Result = new Map();
-        const result: Types.Result = new Map();
+    export function tryMatch(pattern: Rule[], intervals: Interval[]) {
+        let longestMatchingChain: Result = new Map();
+        const result: Result = new Map();
 
         let currConstraintId = 0;
         for (let i = 0; i < intervals.length; i++) {
@@ -63,7 +63,7 @@ export module Common
      * @param pattern           The pattern that needs to be tested.
      * @param precedingMatches  The map of any preceding matches, which is used to verify expressions.
      */
-    function satisfiesRule(interval: Types.Interval, nextInterval: Types.Interval | null, rule: Types.Rule, precedingMatches: Types.Result): boolean {
+    function satisfiesRule(interval: Interval, nextInterval: Interval | null, rule: Rule, precedingMatches: Result): boolean {
         const expressionEnv = new Map([...precedingMatches].map(v => <[string, number]>[v[0], v[1].to - v[1].from]));
 
         // interval matches minSize constraint?
