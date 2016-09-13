@@ -1,5 +1,6 @@
 import { Rule, Interval, Result } from './types'
 import * as Common from './common'
+import * as Suggest from './suggest'
 
 export * from './types'
 
@@ -24,4 +25,17 @@ export module IntervalMatch
         return Common.tryMatch(pattern, intervals).result;
     }
 
+    export function suggest(pattern: Rule[], intervals: Interval[], ordered = false): Interval[] | null {
+        if (pattern.length === 0) {
+            return [];
+        }
+
+        if (!ordered) {
+            intervals = intervals
+                .sort((a, b) => a.to - b.to)
+                .sort((a, b) => a.from - b.from);
+        }
+
+        return Suggest.suggest(pattern, intervals);
+    }
 }

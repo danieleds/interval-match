@@ -9,7 +9,7 @@ import { Rule, Interval, Result } from './types'
  */
 export function tryMatch(pattern: Rule[], intervals: Interval[]) {
     let longestMatchingChain: Result = new Map();
-    const result: Result = new Map();
+    let result: Result = new Map();
 
     let currConstraintId = 0;
     for (let i = 0; i < intervals.length; i++) {
@@ -22,7 +22,7 @@ export function tryMatch(pattern: Rule[], intervals: Interval[]) {
 
         if (matches) {
             // Add it to the result
-            result.set(constraint.interval.name, interval);
+            result.set(constraint.interval.name, interval); // FIXME Add even if followingSpace doesn't match
             if (constraint.followingSpace) {
                 const spaceInterval = {from: interval.to, to: nextInterval ? nextInterval.from : Infinity, data: undefined};
                 result.set(constraint.followingSpace.name, spaceInterval);
@@ -44,7 +44,7 @@ export function tryMatch(pattern: Rule[], intervals: Interval[]) {
         } else {
             // No match; any previous matches were errors. Clear them and then keep searching.
             currConstraintId = 0;
-            result.clear();
+            result = new Map();
         }
     }
 
@@ -140,6 +140,6 @@ export function length(interval: { from: number, to: number }): number {
 /**
  * Check if the provided value has numeric type.
  */
-function isNumber(n: any): boolean {
+export function isNumber(n: any): n is number {
     return (typeof n === 'number') || (n instanceof Number);
 }

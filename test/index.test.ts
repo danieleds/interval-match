@@ -2,6 +2,9 @@ const assert = require('assert6');
 import { IntervalMatch } from '../src/index'
 import * as data from './index.test.data'
 
+import './common.test'
+import './suggest.test'
+
 describe('IntervalMatch', () => {
 
     data.test_data_1.forEach((testData, i) => {
@@ -10,7 +13,7 @@ describe('IntervalMatch', () => {
             const intervals = testData.v2;
             const output = testData.r;
 
-            assert.assertMap(IntervalMatch.match(pattern, intervals), output);
+            assert.deepStrictEqual(IntervalMatch.match(pattern, intervals), output);
         })
     })
 

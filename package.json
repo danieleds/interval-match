@@ -11,7 +11,10 @@
     "url": "https://github.com/danieleds/interval-match/issues"
   },
   "keywords": [
-    "interval", "pattern", "match", "search"
+    "interval",
+    "pattern",
+    "match",
+    "search"
   ],
   "license": "MIT",
   "main": "lib/src/index.js",
@@ -27,5 +30,9 @@
   },
   "files": [
     "lib/src"
-  ]
+  ],
+  "dependencies": {
+    "algebra.js": "^0.2.5",
+    "javascript-lp-solver": "^0.4.3"
+  }
 }
