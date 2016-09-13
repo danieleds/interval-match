@@ -1,5 +1,5 @@
 import { Rule, Interval, Result } from './types'
-import { Common } from './common'
+import * as Common from './common'
 
 export * from './types'
 
