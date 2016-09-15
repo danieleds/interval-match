@@ -1,6 +1,6 @@
 {
   "name": "interval-match",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "Match a set of intervals with various patterns.",
   "author": "Daniele Di Sarli <danieleds0@gmail.com>",
   "repository": {
