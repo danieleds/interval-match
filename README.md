@@ -143,6 +143,7 @@ There are two types of rules: *IntervalRule* and *SpaceRule*. The first is appli
    Defines the minimum size of the interval. If it is a string, the value is interpreted as an arithmetic expression which:
      * can use `+`, `-` and `*` operators (no division)
      * can use any preceding matched name as a variable (e.g: `1.5 * (A + B) - 1`)
+     * must be *linear*, in a mathematical sense
 
 * **maxSize:** number | string
 
