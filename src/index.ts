@@ -3,6 +3,7 @@ import * as Common from './common'
 import * as Suggest from './suggest'
 
 export * from './types'
+export { isSpaceInterval } from './common'
 
 export module IntervalMatch
 {

@@ -83,7 +83,7 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
 
 
     // Get the longest match, filtering out the space intervals
-    const longestMatch: Interval[] = Common.tryMatch(pattern, intervals).result.filter(v => !isSpaceInterval(v));
+    const longestMatch: Interval[] = Common.tryMatch(pattern, intervals).result.filter(v => !Common.isSpaceInterval(v));
 
     // Let's build the objective function.
     const absoluteInequalities: string[] = []; // Additional inequalities for absolute values
@@ -347,8 +347,4 @@ function mapSum<T>(map: Map<T, number>, key: T, val: number) {
     } else {
         map.set(key, val);
     }
-}
-
-function isSpaceInterval(interval: Interval | SpaceInterval): interval is SpaceInterval {
-    return (<Interval & SpaceInterval>interval).isSpace
 }

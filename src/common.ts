@@ -157,3 +157,7 @@ export function length(interval: { from: number, to: number }): number {
 export function isNumber(n: any): n is number {
     return (typeof n === 'number') || (n instanceof Number);
 }
+
+export function isSpaceInterval(interval: Interval | SpaceInterval): interval is SpaceInterval {
+    return (<Interval & SpaceInterval>interval).isSpace
+}
