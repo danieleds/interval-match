@@ -1,15 +1,20 @@
 import { ArithmeticExpression } from './arithmeticExpression'
-import { Rule, Interval, Result } from './types'
+import { Rule, Interval, SpaceInterval, MatchResult } from './types'
 
 /**
  * Return the first satisfied match, along with the longest partial result.
  * If a match is found, the longest partial result is the same as the result.
  * 
+ * @param pattern   The pattern to match
  * @param intervals The set of ORDERED non-overlapping intervals.
+ * 
+ * @return  the result (or the partial result) of the match
  */
-export function tryMatch(pattern: Rule[], intervals: Interval[]) {
-    let longestMatchingChain: Result = new Map();
-    let result: Result = new Map();
+export function tryMatch(pattern: Rule[], intervals: Interval[]): MatchResult {
+    let longestGroups: Map<string, Interval|SpaceInterval> = new Map();
+    let groups: Map<string, Interval|SpaceInterval> = new Map();
+    let longestResult: (Interval|SpaceInterval)[] = [];
+    let result: (Interval|SpaceInterval)[] = [];
 
     let currConstraintId = 0;
     for (let i = 0; i < intervals.length; i++) {
@@ -18,19 +23,27 @@ export function tryMatch(pattern: Rule[], intervals: Interval[]) {
         const constraint = pattern[currConstraintId];
 
         // Check if this interval satisfies the current constraint
-        const matches = satisfiesRule(interval, nextInterval, constraint, result);
+        const matches = satisfiesRule(interval, nextInterval, constraint, groups);
 
         if (matches) {
             // Add it to the result
-            result.set(constraint.interval.name, interval); // FIXME Add even if followingSpace doesn't match
+            groups.set(constraint.interval.name, interval); // FIXME Add even if followingSpace doesn't match
+            result.push(interval);
             if (constraint.followingSpace) {
-                const spaceInterval = {from: interval.to, to: nextInterval ? nextInterval.from : Infinity, data: undefined};
-                result.set(constraint.followingSpace.name, spaceInterval);
+                const spaceInterval = {
+                    from: interval.to,
+                    to: nextInterval ? nextInterval.from : Infinity,
+                    data: undefined,
+                    isSpace: true
+                };
+                groups.set(constraint.followingSpace.name, spaceInterval);
+                result.push(spaceInterval);
             }
 
             // Update longestMatchingChain
-            if (result.size >= longestMatchingChain.size) {
-                longestMatchingChain = result;
+            if (result.length >= longestResult.length) {
+                longestGroups = groups;
+                longestResult = result;
             }
 
             if (currConstraintId + 1 < pattern.length) {
@@ -38,18 +51,19 @@ export function tryMatch(pattern: Rule[], intervals: Interval[]) {
                 currConstraintId++;
             } else {
                 // No more constraints to check! They all matched, so we're finished.
-                return { success: true, result: result, longestMatch: result };
+                return { success: true, groups: groups, result: result };
             }
 
         } else {
             // No match; any previous matches were errors. Clear them and then keep searching.
             currConstraintId = 0;
-            result = new Map();
+            groups = new Map();
+            result = [];
         }
     }
 
     // If we're here, we've not been able to match all the constraints.
-    return { success: false, result: new Map(), longestMatch: longestMatchingChain };
+    return { success: false, groups: longestGroups, result: longestResult };
 }
 
 
@@ -61,7 +75,7 @@ export function tryMatch(pattern: Rule[], intervals: Interval[]) {
  * @param pattern           The pattern that needs to be tested.
  * @param precedingMatches  The map of any preceding matches, which is used to verify expressions.
  */
-function satisfiesRule(interval: Interval, nextInterval: Interval | null, rule: Rule, precedingMatches: Result): boolean {
+function satisfiesRule(interval: Interval, nextInterval: Interval | null, rule: Rule, precedingMatches: Map<string, Interval|SpaceInterval>): boolean {
     const expressionEnv = new Map([...precedingMatches].map(v => <[string, number]>[v[0], v[1].to - v[1].from]));
 
     // interval matches minSize constraint?
@@ -121,7 +135,7 @@ function satisfiesRule(interval: Interval, nextInterval: Interval | null, rule: 
     return true;
 }
 
-export function parseExpression(expr: number | string, env: Map<string, number>): number {
+function parseExpression(expr: number | string, env: Map<string, number>): number {
     if (isNumber(expr)) {
         return +expr;
     } else {

@@ -1,4 +1,4 @@
-import { Rule, Interval, Result } from '../src/index'
+import { Rule, Interval } from '../src/index'
 
 export const test_data_1: {v1: Rule[], v2: Interval[], r: Interval[]}[] = [
     {

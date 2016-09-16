@@ -90,10 +90,18 @@ const intervals = [
 const matches = IntervalMatch.match(pattern, intervals);
 
 // Now `matches` will be:
-//     Map {
-//       'A' => { from: 40, to: 60, data: 'orange' },
-//       'B' => { from: 60, to: 70, data: undefined },
-//       'C' => { from: 70, to: 100, data: 'lemon' } }
+//   {
+//     success: true,
+//     groups:
+//      Map {
+//        'A' => { from: 40, to: 60, data: 'orange' },
+//        'B' => { from: 60, to: 70, data: undefined, isSpace: true },
+//        'C' => { from: 70, to: 100, data: 'lemon' } },
+//     result:
+//      [ { from: 40, to: 60, data: 'orange' },
+//        { from: 60, to: 70, data: undefined, isSpace: true },
+//        { from: 70, to: 100, data: 'lemon' } ]
+//   }
 ```
 
 ## Patterns

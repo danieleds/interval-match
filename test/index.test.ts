@@ -13,7 +13,7 @@ describe('IntervalMatch', () => {
             const intervals = testData.v2;
             const output = testData.r;
 
-            assert.deepStrictEqual(IntervalMatch.match(pattern, intervals), output);
+            assert.deepStrictEqual(IntervalMatch.match(pattern, intervals).groups, output);
         })
     })
 

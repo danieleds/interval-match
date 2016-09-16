@@ -10,7 +10,7 @@ describe('IntervalMatch', () => {
             const intervals = testData.v2;
             const output = testData.r;
 
-            assert.assertMap(Common.tryMatch(pattern, intervals).longestMatch, output);
+            assert.assertMap(Common.tryMatch(pattern, intervals).groups, output);
         })
     })
 

@@ -1,4 +1,4 @@
-import { Rule, Interval, Result } from './types'
+import { Rule, Interval, SpaceInterval } from './types'
 import * as Common from './common'
 const algebra = require('algebra.js'); // For parsing expressions
 const lpsolver = require('javascript-lp-solver');
@@ -82,7 +82,8 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
     */
 
 
-    const longestMatch = Common.tryMatch(pattern, intervals).longestMatch;
+    // Get the longest match, filtering out the space intervals
+    const longestMatch: Interval[] = Common.tryMatch(pattern, intervals).result.filter(v => !isSpaceInterval(v));
 
     // Let's build the objective function.
     const absoluteInequalities: string[] = []; // Additional inequalities for absolute values
@@ -95,42 +96,40 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
         mapSum(coefficients, `i${i}_from`, -1);
 
         // Minimize the difference with already matching intervals
-        if (rule.interval.name !== '') {
-            if (longestMatch.has(rule.interval.name)) {
-                const match = longestMatch.get(rule.interval.name);
+        if (i < longestMatch.length) {
+            const match = longestMatch[i];
 
-                /*
-                   We want to insert the following into the objective function to be minimized:
+            /*
+                We want to insert the following into the objective function to be minimized:
 
-                       |i(k)_from - match.from| + |i(k)_to - match.to|
+                    |i(k)_from - match.from| + |i(k)_to - match.to|
 
-                   But we can't use that because of the absolute value. We need to add extra inequalities
-                   to simulate an absolute operator. We exploit the following property:
+                But we can't use that because of the absolute value. We need to add extra inequalities
+                to simulate an absolute operator. We exploit the following property:
 
-                       min |x| + |y| + ...
-                       Ax <= b
+                    min |x| + |y| + ...
+                    Ax <= b
 
-                   is equivalent to
+                is equivalent to
 
-                       min t1 + t2 + ...
-                       x <= t1
-                       x >= -t1
-                       y <= t2
-                       y >= -t2
-                       ...
-                       Ax <= b
+                    min t1 + t2 + ...
+                    x <= t1
+                    x >= -t1
+                    y <= t2
+                    y >= -t2
+                    ...
+                    Ax <= b
 
-                   See also http://math.stackexchange.com/questions/623568/minimizing-the-sum-of-absolute-values-with-a-linear-solver
-                */
+                See also http://math.stackexchange.com/questions/623568/minimizing-the-sum-of-absolute-values-with-a-linear-solver
+            */
 
-                mapSum(coefficients, `absDiff_i${i}_from`, 1);
-                mapSum(coefficients, `absDiff_i${i}_to`, 1);
+            mapSum(coefficients, `absDiff_i${i}_from`, 1);
+            mapSum(coefficients, `absDiff_i${i}_to`, 1);
 
-                absoluteInequalities.push(`i${i}_from - absDiff_i${i}_from <= ${match.from}`);
-                absoluteInequalities.push(`i${i}_from + absDiff_i${i}_from >= ${match.from}`);
-                absoluteInequalities.push(`i${i}_to - absDiff_i${i}_to <= ${match.to}`);
-                absoluteInequalities.push(`i${i}_to + absDiff_i${i}_to >= ${match.to}`);
-            }
+            absoluteInequalities.push(`i${i}_from - absDiff_i${i}_from <= ${match.from}`);
+            absoluteInequalities.push(`i${i}_from + absDiff_i${i}_from >= ${match.from}`);
+            absoluteInequalities.push(`i${i}_to - absDiff_i${i}_to <= ${match.to}`);
+            absoluteInequalities.push(`i${i}_to + absDiff_i${i}_to >= ${match.to}`);
         }
     }
 
@@ -348,4 +347,8 @@ function mapSum<T>(map: Map<T, number>, key: T, val: number) {
     } else {
         map.set(key, val);
     }
+}
+
+function isSpaceInterval(interval: Interval | SpaceInterval): interval is SpaceInterval {
+    return (<Interval & SpaceInterval>interval).isSpace
 }

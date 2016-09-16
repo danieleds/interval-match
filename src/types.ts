@@ -4,12 +4,36 @@ export interface Interval {
     data: any
 }
 
+export interface SpaceInterval {
+    from: number
+    to: number
+    data: undefined
+    isSpace: true
+}
+
 export interface Rule {
     interval: IntervalRule,
     followingSpace: SpaceRule | null
 }
 
-export type Result = Map<string, Interval>;
+export interface MatchResult {
+    /**
+     * True if and only if the intervals matched the whole pattern.
+     */
+    success: boolean;
+
+    /**
+     * The matching intervals, organized by their name. If `success == false`, this
+     * contains the partial matches before the failure.
+     */
+    groups: Map<string, Interval|SpaceInterval>;
+
+    /**
+     * The ordered list of matching intervals. If `success == false`, this
+     * contains the partial matches before the failure.
+     */
+    result: (Interval|SpaceInterval)[];
+}
 
 export interface IntervalRule {
     /**

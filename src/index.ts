@@ -1,4 +1,4 @@
-import { Rule, Interval, Result } from './types'
+import { Rule, Interval, MatchResult } from './types'
 import * as Common from './common'
 import * as Suggest from './suggest'
 
@@ -11,9 +11,9 @@ export module IntervalMatch
      * @param intervals The set of non-overlapping intervals.
      * @param ordered Set this to true if the provided intervals are already ordered. // FIXME ordered how?
      */
-    export function match(pattern: Rule[], intervals: Interval[], ordered = false): Result {
+    export function match(pattern: Rule[], intervals: Interval[], ordered = false): MatchResult {
         if (pattern.length === 0 || intervals.length === 0) {
-            return new Map();
+            return { success: false, groups: new Map(), result: [] };
         }
 
         if (!ordered) {
@@ -22,7 +22,7 @@ export module IntervalMatch
                 .sort((a, b) => a.from - b.from);
         }
 
-        return Common.tryMatch(pattern, intervals).result;
+        return Common.tryMatch(pattern, intervals);
     }
 
     export function suggest(pattern: Rule[], intervals: Interval[], ordered = false): Interval[] | null {
