@@ -14,5 +14,15 @@ export const test_data_1: {v1: Rule[], v2: Interval[], r: Interval[]}[] = [
             ],
         v2: [],
         r:  [{from: 150, to: 300, data: undefined}, {from: 500, to: 800, data: undefined}],
+    },
+    {
+        v1: [{interval: {name: "A", from: {lowerBound: 8-0.5, upperBound: 8}, to: null, minSize: 8, maxSize: 10}, followingSpace: null}],
+        v2: [{from: 9, to: 18, data: 'u'}],
+        r:  [{from: 7.5, to: 15.5, data: undefined}],
+    },
+    {
+        v1: [{interval: {name: "A", from: {lowerBound: 50, upperBound: 55}, to: null, minSize: 100, maxSize: 600}, followingSpace: null}],
+        v2: [{from: 52, to: 10000, data: 'u'}],
+        r:  [{from: 52, to: 152, data: undefined}],
     }
 ]

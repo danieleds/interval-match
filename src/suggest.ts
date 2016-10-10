@@ -239,14 +239,84 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
     const result = lpsolver.Solve(structured);
 
     if (result.feasible) {
-        const intervals: Interval[] = [];
+        const output: Interval[] = [];
         for (let i = 0; i < pattern.length; i++) {
-            intervals.push({ from: result[`i${i}_from`], to: result[`i${i}_to`], data: undefined });
+            output.push({ from: result[`i${i}_from`], to: result[`i${i}_to`], data: undefined });
         }
-        return intervals;
+        minimizeErrors(pattern, output, intervals);
+        return output;
     } else {
         return null;
     }
+}
+
+/**
+ * Tries to minimize the difference between `intervals` and `referenceIntervals` by modifying
+ * `intervals` while respecting the constraints of the pattern.
+ */
+function minimizeErrors(pattern: Rule[], intervals: Interval[], referenceIntervals: Interval[]): void
+{
+    const points = Array.from(intervalsToPoints(referenceIntervals));
+    for (let iv of intervals) {
+        const backupFrom = iv.from;
+        const backupTo = iv.to;
+
+        let closestFrom = closestValue(points, iv.from);
+        closestFrom = closestFrom === null ? iv.from : closestFrom;
+        let closestTo = closestValue(points, iv.to);
+        closestTo = closestTo === null ? iv.to : closestTo;
+
+        // Both "from" and "to" at their closest points
+        iv.from = closestFrom;
+        iv.to = closestTo;
+        if (Common.tryMatch(pattern, intervals).success) {
+            continue;
+        }
+
+        // "from" at its closest point, "to" shifted to maintain the interval size
+        iv.from = closestFrom;
+        iv.to = iv.from + (backupTo - backupFrom);
+        if (Common.tryMatch(pattern, intervals).success) {
+            continue;
+        }
+
+        // "from" at its closest point
+        iv.from = closestFrom;
+        iv.to = backupTo;
+        if (Common.tryMatch(pattern, intervals).success) {
+            continue;
+        }
+
+        // "to" at its closest point
+        iv.from = backupFrom;
+        iv.to = closestTo;
+        if (Common.tryMatch(pattern, intervals).success) {
+            continue;
+        }
+
+        // Reset to the original values
+        iv.from = backupFrom;
+        iv.to = backupTo;
+    }
+}
+
+function *intervalsToPoints(intervals: Interval[]): IterableIterator<number> {
+    for (let iv of intervals) {
+        yield iv.from;
+        yield iv.to;
+    }
+}
+
+/**
+ * Given an array of numbers, return the closest to `target`.
+ * Returns null if the array is empty.
+ */
+function closestValue(values: number[], target: number): number | null {
+    if (values.length == 0) {
+        return null;
+    }
+
+    return values.reduce((prev, curr) => Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev, Infinity);
 }
 
 /**
