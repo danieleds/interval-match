@@ -25,7 +25,7 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
 
         min: (i0_to - i0_from) + (i1_to - i1_from) + ... + (in_to - in_from)
 
-    And we can do the latter by using an objective function like the following:
+    And we can partially do the latter by using an objective function like the following:
 
         min: |i0_from - match0.from| + |i0_to - match0.to| + ... + |in_from - matchn.from| + |in_to - matchn.to|
 
@@ -63,7 +63,7 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
         minSize should be twice the size of the interval matched by A, plus 5
 
     This expression must be linear.
-    To put it in our linear system we need to express 'A' with respect to the interval's
+    To put it in our linear system we need to express 'A' with respect to the interval
     start and end. So, to continue with our example, the inequality will become:
 
          - i(k).from + i(k).to  >=  2*(A) + 5
@@ -74,7 +74,8 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
         =
          - i(k).from + i(k).to - 2*i(h).to + 2*i(h).from  >=  5
 
-    And now we can put that into our system.
+    Where i(h) is the interval matched by the pattern A.
+    And now we can put that inequality into our system.
 
     Note that right now we're using `javascript-lp-solver` to solve the linear problems.
     This requires us to write the system in the format of lp_solve, which has a special syntax:
@@ -82,7 +83,7 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
     */
 
 
-    // Get the longest match, filtering out the space intervals
+    // Get the longest match, and filter out the space intervals
     const longestMatch: Interval[] = Common.tryMatch(pattern, intervals).result.filter(v => !Common.isSpaceInterval(v));
 
     // Let's build the objective function.
@@ -252,7 +253,7 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
 
 /**
  * Tries to minimize the difference between `intervals` and `referenceIntervals` by modifying
- * `intervals` while respecting the constraints of the pattern.
+ * `intervals`, while staying in accordance to the constraints of the pattern.
  */
 function minimizeErrors(pattern: Rule[], intervals: Interval[], referenceIntervals: Interval[]): void
 {
@@ -300,6 +301,9 @@ function minimizeErrors(pattern: Rule[], intervals: Interval[], referenceInterva
     }
 }
 
+/**
+ * Given an array of intervals, yields each endpoint in the provided order.
+ */
 function *intervalsToPoints(intervals: Interval[]): IterableIterator<number> {
     for (let iv of intervals) {
         yield iv.from;
@@ -308,7 +312,7 @@ function *intervalsToPoints(intervals: Interval[]): IterableIterator<number> {
 }
 
 /**
- * Given an array of numbers, return the closest to `target`.
+ * Given an array of numbers, return the closest one to `target`.
  * Returns null if the array is empty.
  */
 function closestValue(values: number[], target: number): number | null {
@@ -321,7 +325,7 @@ function closestValue(values: number[], target: number): number | null {
 
 /**
  * Given an expression and a list of rules, simplify the expression and
- * writes it with respect to the intervals' from and to values.
+ * writes it with respect to the intervals from and to values.
  * 
  * For example, having the rules:
  * 
