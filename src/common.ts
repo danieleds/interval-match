@@ -135,7 +135,7 @@ function satisfiesRule(interval: Interval, nextInterval: Interval | null, rule: 
     return true;
 }
 
-function parseExpression(expr: number | string, env: Map<string, number>): number {
+export function parseExpression(expr: number | string, env: Map<string, number>): number {
     if (isNumber(expr)) {
         return +expr;
     } else {

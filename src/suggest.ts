@@ -9,10 +9,53 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
     }
 
     // FIXME We should check that the expressions are linear
-
+    // FIXME Order intervals?
     
+    let result = generateIntervals(pattern, intervals, null);
 
-/*
+    if (result !== null) {
+        minimizeErrors(pattern, result, intervals);
+        return result;
+
+        // Find associations with the original intervals
+        /*let associations: number[] = [];
+        if (intervals.length > 0) {
+            for (let i = 0; i < pattern.length; i++) {
+                associations.push(intervals.indexOf(closestInterval(result[i], intervals)));
+            }
+        } else {
+            associations = Array(pattern.length).fill(null);
+        }
+
+        return generateIntervals(pattern, intervals, associations);*/
+    } else {
+        return null;
+    }
+}
+
+/**
+ * Generate a set of intervals matching the specified pattern and close to the provided intervals.
+ * 
+ * @param pattern       The pattern from which to generate intervals
+ * @param intervals     The generated intervals will be as close as possible to these intervals
+ * @param associations  Associate each rule of `pattern` to an interval of `intervals`. The length of this
+ *                      array must be equal to that of `pattern`. If it is null, it is considered as an
+ *                      array of all null elements.
+ *                      For example, if this parameter is `[3, null, 2]`, it means that the first
+ *                      rule is associated with the interval at index 3, the second rule with nothing
+ *                      and the third rule with the interval at index 2.
+ */
+function generateIntervals(pattern: Rule[], intervals: Interval[], associations: number[]|null): Interval[] | null
+{
+    if (pattern.length === 0) {
+        return [];
+    }
+
+    if (associations === null) {
+        associations = Array(pattern.length).fill(null);
+    }
+
+    /*
 
     We try to find compatible intervals using linear programming.
 
@@ -91,14 +134,15 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
     const coefficients = new Map([['', 0]]);
     for (let i = 0; i < pattern.length; i++) {
         const rule = pattern[i];
+
         // Minimize the size of the intervals
         //    i(k)_to - i(k)_from
         mapSum(coefficients, `i${i}_to`, 1);
         mapSum(coefficients, `i${i}_from`, -1);
 
         // Minimize the difference with already matching intervals
-        if (i < longestMatch.length) {
-            const match = longestMatch[i];
+        if (i < longestMatch.length || associations[i] !== null) {
+            const match = associations[i] === null ? longestMatch[i] : intervals[associations[i]];
 
             /*
                 We want to insert the following into the objective function to be minimized:
@@ -114,14 +158,17 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
                 is equivalent to
 
                     min t1 + t2 + ...
-                    x <= t1
-                    x >= -t1
-                    y <= t2
-                    y >= -t2
+                     x <= t1
+                    -x <= t1
+                     y <= t2
+                    -y <= t2
                     ...
                     Ax <= b
 
                 See also http://math.stackexchange.com/questions/623568/minimizing-the-sum-of-absolute-values-with-a-linear-solver
+
+                (you can see that t1, t2, etc will always be positive).
+
             */
 
             mapSum(coefficients, `absDiff_i${i}_from`, 1);
@@ -131,6 +178,11 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
             absoluteInequalities.push(`i${i}_from + absDiff_i${i}_from >= ${match.from}`);
             absoluteInequalities.push(`i${i}_to - absDiff_i${i}_to <= ${match.to}`);
             absoluteInequalities.push(`i${i}_to + absDiff_i${i}_to >= ${match.to}`);
+
+            // Minimize size difference
+            //mapSum(coefficients, `absDiff_i${i}_size`, 1);
+            //absoluteInequalities.push(`i${i}_to - i${i}_from - absDiff_i${i}_size <= ${match.to - match.from}`);
+            //absoluteInequalities.push(`i${i}_to - i${i}_from + absDiff_i${i}_size >= ${match.to - match.from}`);
         }
     }
 
@@ -244,7 +296,6 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
         for (let i = 0; i < pattern.length; i++) {
             output.push({ from: result[`i${i}_from`], to: result[`i${i}_to`], data: undefined });
         }
-        minimizeErrors(pattern, output, intervals);
         return output;
     } else {
         return null;
@@ -257,47 +308,118 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
  */
 function minimizeErrors(pattern: Rule[], intervals: Interval[], referenceIntervals: Interval[]): void
 {
-    const points = Array.from(intervalsToPoints(referenceIntervals));
-    for (let iv of intervals) {
-        const backupFrom = iv.from;
-        const backupTo = iv.to;
+    if (pattern.length !== intervals.length) {
+        throw new Error("Pattern and Intervals must have the same length.");
+    }
 
-        let closestFrom = closestValue(points, iv.from);
-        closestFrom = closestFrom === null ? iv.from : closestFrom;
-        let closestTo = closestValue(points, iv.to);
-        closestTo = closestTo === null ? iv.to : closestTo;
+    if (referenceIntervals.length === 0) {
+        return;
+    }
 
-        // Both "from" and "to" at their closest points
-        iv.from = closestFrom;
-        iv.to = closestTo;
+    /*
+
+        === Algorithm: ===
+
+        1. Align "from" by shifting.
+        2. Is it still valid?
+                If not, go to (b)
+        3. Is it shorter/longer than reference?
+                Expand it: "to" = min(r.to, p.from + p.maxSize, p.to.upperBound)
+                Reduce it: "to" = max(r.to, p.from + p.minSize, p.to.lowerBound)
+        4. Is it still valid?
+                If not, go to (b)
+        5. Done. Do next interval.
+
+        (b):
+
+        1. Align "to" by shifting.
+        2. Is it still valid?
+                If not, fail
+        3. Is it shorter/longer than reference?
+                Expand it: "from" = max(r.from, p.to - p.maxSize, p.from.lowerBound)
+                Reduce it: "from" = min(r.from, p.to - p.minSize, p.from.upperBound)
+        4. Is it still valid?
+                If not, fail
+        5. Done. Do next interval.
+
+    */
+
+
+    for (let i = 0; i < intervals.length; i++) {
+        const interval = intervals[i];
+        const rule = pattern[i];
+
+        const reference = closestInterval(interval, referenceIntervals);
+        
+        const backupFrom = interval.from;
+        const backupTo = interval.to;
+
+        const expressionEnv = new Map<string, number>();
+        for (let k = 0; k < i; k++) {
+            expressionEnv.set(pattern[k].interval.name, intervals[k].to - intervals[k].from);
+            if (k+1 < i && pattern[k].followingSpace) {
+                expressionEnv.set(pattern[k].followingSpace!.name, intervals[k+1].from - intervals[k].to);
+            }
+        }
+
+        // Align "from"
+        interval.from = reference.from;
+        interval.to = reference.from + (backupTo - backupFrom);
+
+        if (interval.to - interval.from < reference.to - reference.from) {
+            // Expand
+            const maxSize = Common.parseExpression(rule.interval.maxSize, expressionEnv);
+            const toUpperBound = (rule.interval.to !== null && rule.interval.to.upperBound !== null) ?
+                                    rule.interval.to.upperBound : +Infinity;
+
+            interval.to = Math.min(reference.to, interval.from + maxSize, toUpperBound);
+        } else if (interval.to - interval.from > reference.to - reference.from) {
+            // Reduce
+            const minSize = Common.parseExpression(rule.interval.minSize, expressionEnv);
+            const toLowerBound = (rule.interval.to !== null && rule.interval.to.lowerBound !== null) ?
+                                    rule.interval.to.lowerBound : -Infinity;
+
+            interval.to = Math.max(reference.to, interval.from + minSize, toLowerBound);
+        }
+
         if (Common.tryMatch(pattern, intervals).success) {
+            // Done. Do next interval.
+            continue;
+        }
+        
+
+        // "from" alignment failed. Try "to" alignment.
+        interval.to = reference.to;
+        interval.from = reference.to - (backupTo - backupFrom);
+
+        if (interval.to - interval.from < reference.to - reference.from) {
+            // Expand
+            const maxSize = Common.parseExpression(rule.interval.maxSize, expressionEnv);
+            const fromLowerBound = (rule.interval.from !== null && rule.interval.from.lowerBound !== null) ?
+                                    rule.interval.from.lowerBound : -Infinity;
+
+            interval.from = Math.max(reference.from, interval.to - maxSize, fromLowerBound);
+            //Expand it: "from" = max(r.from, p.to - p.maxSize, p.from.lowerBound)
+
+        } else if (interval.to - interval.from > reference.to - reference.from) {
+            // Reduce
+            const minSize = Common.parseExpression(rule.interval.minSize, expressionEnv);
+            const fromUpperBound = (rule.interval.from !== null && rule.interval.from.upperBound !== null) ?
+                                    rule.interval.from.upperBound : +Infinity;
+
+            interval.from = Math.min(reference.from, interval.to - minSize, fromUpperBound);
+            // Reduce it: "from" = min(r.from, p.to - p.minSize, p.from.upperBound)
+        }
+
+        if (Common.tryMatch(pattern, intervals).success) {
+            // Done. Do next interval.
             continue;
         }
 
-        // "from" at its closest point, "to" shifted to maintain the interval size
-        iv.from = closestFrom;
-        iv.to = iv.from + (backupTo - backupFrom);
-        if (Common.tryMatch(pattern, intervals).success) {
-            continue;
-        }
 
-        // "from" at its closest point
-        iv.from = closestFrom;
-        iv.to = backupTo;
-        if (Common.tryMatch(pattern, intervals).success) {
-            continue;
-        }
-
-        // "to" at its closest point
-        iv.from = backupFrom;
-        iv.to = closestTo;
-        if (Common.tryMatch(pattern, intervals).success) {
-            continue;
-        }
-
-        // Reset to the original values
-        iv.from = backupFrom;
-        iv.to = backupTo;
+        // Failed. Restore the original interval.
+        interval.from = backupFrom;
+        interval.to = backupTo;
     }
 }
 
@@ -321,6 +443,13 @@ function closestValue(values: number[], target: number): number | null {
     }
 
     return values.reduce((prev, curr) => Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev, Infinity);
+}
+
+function closestInterval(interval: Interval, intervals: Interval[]): Interval {
+    return intervals.reduce((prev, curr) => 
+        Math.abs(curr.from - interval.from) + Math.abs(curr.to - interval.to) <
+        Math.abs(prev.from - interval.from) + Math.abs(prev.to - interval.to) ?
+        curr : prev, intervals[0]);
 }
 
 /**
