@@ -15,10 +15,9 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
 
     if (result !== null) {
         minimizeErrors(pattern, result, intervals);
-        return result;
 
         // Find associations with the original intervals
-        /*let associations: number[] = [];
+        let associations: number[] = [];
         if (intervals.length > 0) {
             for (let i = 0; i < pattern.length; i++) {
                 associations.push(intervals.indexOf(closestInterval(result[i], intervals)));
@@ -27,7 +26,7 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
             associations = Array(pattern.length).fill(null);
         }
 
-        return generateIntervals(pattern, intervals, associations);*/
+        return generateIntervals(pattern, intervals, associations);
     } else {
         return null;
     }
@@ -135,11 +134,6 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
     for (let i = 0; i < pattern.length; i++) {
         const rule = pattern[i];
 
-        // Minimize the size of the intervals
-        //    i(k)_to - i(k)_from
-        mapSum(coefficients, `i${i}_to`, 1);
-        mapSum(coefficients, `i${i}_from`, -1);
-
         // Minimize the difference with already matching intervals
         if (i < longestMatch.length || associations[i] !== null) {
             const match = associations[i] === null ? longestMatch[i] : intervals[associations[i]];
@@ -147,7 +141,7 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
             /*
                 We want to insert the following into the objective function to be minimized:
 
-                    |i(k)_from - match.from| + |i(k)_to - match.to|
+                    2*|i(k)_from - match.from| + |i(k)_to - match.to|
 
                 But we can't use that because of the absolute value. We need to add extra inequalities
                 to simulate an absolute operator. We exploit the following property:
@@ -167,11 +161,18 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
 
                 See also http://math.stackexchange.com/questions/623568/minimizing-the-sum-of-absolute-values-with-a-linear-solver
 
-                (you can see that t1, t2, etc will always be positive).
+                (you can observe that t1, t2, etc will always be positive).
 
+
+                We have the multiplicative constant 2 because we can't assign the same weight to
+                the distance of the "from" endpoint and the distance of the "to" endpoint, otherwise
+                the resulting interval could be in the middle. By doubling the weight of the "from"
+                endpoint, we ensure that the "from" endpoint of the generated interval will be as
+                close as possible to the original "from" endpoint, and from there the "to" endpoint
+                can move as needed.
             */
 
-            mapSum(coefficients, `absDiff_i${i}_from`, 1);
+            mapSum(coefficients, `absDiff_i${i}_from`, 2);
             mapSum(coefficients, `absDiff_i${i}_to`, 1);
 
             absoluteInequalities.push(`i${i}_from - absDiff_i${i}_from <= ${match.from}`);
@@ -179,10 +180,11 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
             absoluteInequalities.push(`i${i}_to - absDiff_i${i}_to <= ${match.to}`);
             absoluteInequalities.push(`i${i}_to + absDiff_i${i}_to >= ${match.to}`);
 
-            // Minimize size difference
-            //mapSum(coefficients, `absDiff_i${i}_size`, 1);
-            //absoluteInequalities.push(`i${i}_to - i${i}_from - absDiff_i${i}_size <= ${match.to - match.from}`);
-            //absoluteInequalities.push(`i${i}_to - i${i}_from + absDiff_i${i}_size >= ${match.to - match.from}`);
+        } else {
+            // Minimize the size of the intervals
+            //    i(k)_to - i(k)_from
+            mapSum(coefficients, `i${i}_to`, 1);
+            mapSum(coefficients, `i${i}_from`, -1);
         }
     }
 
