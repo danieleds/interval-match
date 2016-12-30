@@ -43,8 +43,6 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
             For each endpoint, from 0 to n:
                Mark endpoint as sticky
                r = generateIntervals(...)
-               If #errors in r <= 1:
-                 break
                If r failed or #errors in r > previous #errors in r:
                  Mark endpoint as not sticky.
             return r
@@ -57,6 +55,7 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
         .reduce((a, b) => [...a, ...b])
         .sort((a, b) => Math.abs(a.current_value - a.stickTo) - Math.abs(b.current_value - b.stickTo));
 
+        let lastError = errorMeasure(result, intervals);
         for (let e of endpoints) {
             e.sticky = true;
 
@@ -64,7 +63,13 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
             if (candidateResult === null) {
                 e.sticky = false;
             } else {
-                result = candidateResult;
+                const error = errorMeasure(candidateResult, intervals);
+                if (error < lastError) {
+                    result = candidateResult;
+                    lastError = error;
+                } else {
+                    e.sticky = false;
+                }
             }
         }
     }
@@ -352,6 +357,125 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
     } else {
         return null;
     }
+}
+
+/**
+ * Get a measure of the difference between the provided intervals.
+ */
+export function errorMeasure(intervals1: Interval[], intervals2: Interval[]) {
+    const a = flattenIntervals(intervals1);
+    const b = flattenIntervals(intervals2);
+
+    /*
+        Count the non-overlapping sections: they're errors
+        Possible cases of interest for interval i:
+
+              i-1                   current i                  i+1
+         |------------|          |============|          |------------|
+
+        0  - - - ----------|
+        1  - - - ----------------------|
+        2  - - - --------------------------------------------- - - -
+        3                |-| |-|
+        4                |-------------|
+        5                          |--| |--|
+        6                                  |--------|
+        7                                  |------------------ - - -
+        8
+    */
+
+    const errors: {from: number, to: number}[] = [];
+
+    let i = 0;
+    let j = 0;
+    while (i < a.length) {
+
+        let left_i = a[i].from;
+
+        while (j < b.length && b[j].from < a[i].to) {
+
+            if (i > 0 && b[j].from <= a[i-1].to && b[j].to <= a[i].from) {
+                // (0)
+                errors.push({from: a[i-1].to, to: b[j].to});
+            } else if (i > 0 && b[j].from <= a[i-1].to && a[i].from <= b[j].to && b[j].to <= a[i].to) {
+                // (1)
+                errors.push({from: a[i-1].to, to: b[j].to});
+                left_i = b[j].to;
+            } else if (i > 0 && b[j].from <= a[i-1].to && a[i].to <= b[j].to) {
+                // (2)
+                errors.push({from: a[i-1].to, to: a[i].from});
+                left_i = a[i].to;
+                break;
+            } else if ((i === 0 || a[i-1].to <= b[j].from) && b[j].from <= a[i].from && b[j].to <= a[i].from) {
+                // (3)
+                errors.push({from: b[j].from, to: b[j].to});
+            } else if ((i === 0 || a[i-1].to <= b[j].from) && b[j].from <= a[i].from && a[i].from <= b[j].to && b[j].to <= a[i].to) {
+                // (4)
+                errors.push({from: b[j].from, to: a[i].from});
+                left_i = b[j].to;
+            } else if (a[i].from <= b[j].from && b[j].to <= a[i].to) {
+                // (5)
+                errors.push({from: left_i, to: b[j].from})
+                left_i = b[j].to;
+            } else if (a[i].from <= b[j].from && b[j].from <= a[i].to && (i+1>=a.length || b[j].to <= a[i+1].from)) {
+                // (6)
+                errors.push({from: a[i].to, to: b[j].to})
+                left_i = a[i].to;
+            } else if (i+1<a.length && a[i].from <= b[j].from && b[j].from <= a[i].to && a[i+1].from <= b[j].to) {
+                // (7)
+                errors.push({from: a[i].to, to: a[i+1].from})
+                left_i = a[i].to;
+                break;
+            }
+
+            j++;
+        }
+
+        if (left_i < a[i].to) {
+            // (8)
+            errors.push({from: left_i, to: a[i].to})
+        }
+
+        i++;
+    }
+
+    while (j < b.length) {
+        if (a.length > 0 && b[j].from <= a[a.length-1].to) {
+            errors.push({from: a[a.length-1].to, to: b[j].to})
+        } else {
+            errors.push({from: b[j].from, to: b[j].to})
+        }
+
+        j++;
+    }
+
+    // Increment the cost of each interval by 1: at the same cost, we prefer contiguous intervals.
+    return errors.filter(v => v.from < v.to)
+                 .reduce((sum, curr) => sum + Math.abs(curr.to - curr.from) + 1, 0);
+}
+
+/**
+ * Return the ordered and flattened intervals as a copy.
+ * Running time: O(log n)
+ */
+function flattenIntervals(intervals: Interval[]) {
+    return intervals
+        .sort((a, b) => a.to - b.to)
+        .sort((a, b) => a.from - b.from)
+        .reduce((prev, curr, i) => {
+            if (i === 0) {
+                return [curr];
+            } else {
+                const last = prev[prev.length - 1];
+                if (last.to <= curr.from) {
+                    return [...prev, { from: curr.from, to: curr.to, data: null }];
+                } else if (curr.to <= last.to) {
+                    return prev;
+                } else {
+                    return [...prev, { from: last.to, to: curr.to, data: null }]
+                }
+            }
+        }, <Interval[]>[])
 }
 
 function closestInterval(interval: Interval, intervals: Interval[]): Interval {

@@ -55,3 +55,21 @@ export const test_data_1: {v1: Rule[], v2: Interval[], r: Interval[]}[] = [
         r:  [{from: 0, to: 1, data: undefined}],
     }
 ]
+
+export const test_data_2: {v1: Interval[], v2: Interval[], r: number}[] = [
+    {
+        v1: [ { from: 9, to: 12, data: null }, { from: 14, to: 19, data: null } ],
+        v2: [ { from: 9, to: 12, data: null }, { from: 14, to: 21, data: null } ],
+        r: 3
+    },
+    {
+        v1: [ { from: 9, to: 11, data: null }, { from: 14, to: 20, data: null } ],
+        v2: [ { from: 9, to: 12, data: null }, { from: 14, to: 21, data: null } ],
+        r: 4
+    },
+    {
+        v1: [ { from: 9, to: 11, data: null }, { from: 14, to: 20, data: null } ],
+        v2: [ { from: 9, to: 12, data: null } ],
+        r: 9
+    }
+]
