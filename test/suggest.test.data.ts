@@ -41,5 +41,11 @@ export const test_data_1: {v1: Rule[], v2: Interval[], r: Interval[]}[] = [
              {interval: {name: "B", from: null, to: {lowerBound: 160, upperBound: 180}, minSize: "80 - A - 10", maxSize: "80 - A + 10"}, followingSpace: null }],
         v2: [{from: 50, to: 131, data: 'u'}, {from: 139, to: 150, data: 'v'}],
         r:  [{from: 70, to: 131, data: undefined}, {from: 139, to: 160, data: undefined}],
+    },
+    {
+        v1: [{interval: {name: "A", from: null, to: null, minSize: 0, maxSize: 8}, followingSpace: {name: "sA", minSize: 1, maxSize: 3}},
+             {interval: {name: "B", from: null, to: null, minSize: "8 - A", maxSize: "8 - A"}, followingSpace: null}],
+        v2: [{from: 9, to: 12, data: 'u'}, {from: 14, to: 21, data: 'v'}],
+        r:  [{from: 9, to: 12, data: undefined}, {from: 14, to: 19, data: undefined}],
     }
 ]

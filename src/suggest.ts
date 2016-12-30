@@ -3,6 +3,21 @@ import * as Common from './common'
 const algebra = require('algebra.js'); // For parsing expressions
 const lpsolver = require('javascript-lp-solver');
 
+type StickyEndpoint = {
+    /**
+     * Index of the pattern to which this endpoint belongs.
+     */
+    pattern_index: number,
+    /**
+     * True if it's the left endpoint, false if it's the right endpoint.
+     */
+    left: boolean,
+    /**
+     * Value to stick this endpoint to.
+     */
+    stickTo: number
+};
+
 export function suggest(pattern: Rule[], intervals: Interval[], ordered = false): Interval[] | null {
     if (pattern.length === 0) {
         return [];
@@ -11,25 +26,50 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
     // FIXME We should check that the expressions are linear
     // FIXME Order intervals?
     
-    let result = generateIntervals(pattern, intervals, null);
+    let result = generateIntervals(pattern, intervals, null, []);
 
-    if (result !== null) {
-        minimizeErrors(pattern, result, intervals);
+    if (result !== null && intervals.length > 0) {
 
-        // Find associations with the original intervals
+        // For each interval in `result` find the closest intervals in `intervals`.
+        // pattern[i] is associated with intervals[associations[i]]
         let associations: number[] = [];
-        if (intervals.length > 0) {
-            for (let i = 0; i < pattern.length; i++) {
-                associations.push(intervals.indexOf(closestInterval(result[i], intervals)));
-            }
-        } else {
-            associations = Array(pattern.length).fill(null);
+        for (let i = 0; i < pattern.length; i++) {
+            associations.push(intervals.indexOf(closestInterval(result[i], intervals)));
         }
 
-        return generateIntervals(pattern, intervals, associations);
-    } else {
-        return null;
+        /*
+            For each interval in `result`, take the endpoints of its associated interval.
+            Sort these endpoints from the closest to the farther w.r.t. the current result.
+            For each endpoint, from 0 to n:
+               Mark endpoint as sticky
+               r = generateIntervals(...)
+               If #errors in r <= 1:
+                 break
+               If r failed or #errors in r > previous #errors in r:
+                 Mark endpoint as not sticky.
+            return r
+        */
+
+        const endpoints = result.map((resultIv, i) => [
+            { pattern_index: i, left: true,  stickTo: intervals[associations[i]].from, current_value: resultIv.from, sticky: false },
+            { pattern_index: i, left: false, stickTo: intervals[associations[i]].to,   current_value: resultIv.to, sticky: false }
+        ])
+        .reduce((a, b) => [...a, ...b])
+        .sort((a, b) => Math.abs(a.current_value - a.stickTo) - Math.abs(b.current_value - b.stickTo));
+
+        for (let e of endpoints) {
+            e.sticky = true;
+
+            const candidateResult = generateIntervals(pattern, intervals, associations, endpoints.filter(v => v.sticky));
+            if (candidateResult === null) {
+                e.sticky = false;
+            } else {
+                result = candidateResult;
+            }
+        }
     }
+
+    return result;
 }
 
 /**
@@ -43,8 +83,9 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
  *                      For example, if this parameter is `[3, null, 2]`, it means that the first
  *                      rule is associated with the interval at index 3, the second rule with nothing
  *                      and the third rule with the interval at index 2.
+ * @param stickyEndpoints  An array which contains a set of endpoints for which to force a specified value.
  */
-function generateIntervals(pattern: Rule[], intervals: Interval[], associations: number[]|null): Interval[] | null
+function generateIntervals(pattern: Rule[], intervals: Interval[], associations: number[]|null, stickyEndpoints: StickyEndpoint[]): Interval[] | null
 {
     if (pattern.length === 0) {
         return [];
@@ -284,6 +325,15 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
         }
     }
 
+    // Constraints for sticky endpoints
+    for (let e of stickyEndpoints) {
+        if (e.left) {
+            model.push(`i${e.pattern_index}_from = ${e.stickTo}`);
+        } else {
+            model.push(`i${e.pattern_index}_to = ${e.stickTo}`);
+        }
+    }
+
     // Constraints for positivity of i(k)_from and positivity of interval length
     for (let i = 0; i < pattern.length; i++) {
         model.push(`i${i}_from >= 0`);
@@ -302,149 +352,6 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
     } else {
         return null;
     }
-}
-
-/**
- * Tries to minimize the difference between `intervals` and `referenceIntervals` by modifying
- * `intervals`, while staying in accordance to the constraints of the pattern.
- */
-function minimizeErrors(pattern: Rule[], intervals: Interval[], referenceIntervals: Interval[]): void
-{
-    if (pattern.length !== intervals.length) {
-        throw new Error("Pattern and Intervals must have the same length.");
-    }
-
-    if (referenceIntervals.length === 0) {
-        return;
-    }
-
-    /*
-
-        === Algorithm: ===
-
-        1. Align "from" by shifting.
-        2. Is it still valid?
-                If not, go to (b)
-        3. Is it shorter/longer than reference?
-                Expand it: "to" = min(r.to, p.from + p.maxSize, p.to.upperBound)
-                Reduce it: "to" = max(r.to, p.from + p.minSize, p.to.lowerBound)
-        4. Is it still valid?
-                If not, go to (b)
-        5. Done. Do next interval.
-
-        (b):
-
-        1. Align "to" by shifting.
-        2. Is it still valid?
-                If not, fail
-        3. Is it shorter/longer than reference?
-                Expand it: "from" = max(r.from, p.to - p.maxSize, p.from.lowerBound)
-                Reduce it: "from" = min(r.from, p.to - p.minSize, p.from.upperBound)
-        4. Is it still valid?
-                If not, fail
-        5. Done. Do next interval.
-
-    */
-
-
-    for (let i = 0; i < intervals.length; i++) {
-        const interval = intervals[i];
-        const rule = pattern[i];
-
-        const reference = closestInterval(interval, referenceIntervals);
-        
-        const backupFrom = interval.from;
-        const backupTo = interval.to;
-
-        const expressionEnv = new Map<string, number>();
-        for (let k = 0; k < i; k++) {
-            expressionEnv.set(pattern[k].interval.name, intervals[k].to - intervals[k].from);
-            if (k+1 < i && pattern[k].followingSpace) {
-                expressionEnv.set(pattern[k].followingSpace!.name, intervals[k+1].from - intervals[k].to);
-            }
-        }
-
-        // Align "from"
-        interval.from = reference.from;
-        interval.to = reference.from + (backupTo - backupFrom);
-
-        if (interval.to - interval.from < reference.to - reference.from) {
-            // Expand
-            const maxSize = Common.parseExpression(rule.interval.maxSize, expressionEnv);
-            const toUpperBound = (rule.interval.to !== null && rule.interval.to.upperBound !== null) ?
-                                    rule.interval.to.upperBound : +Infinity;
-
-            interval.to = Math.min(reference.to, interval.from + maxSize, toUpperBound);
-        } else if (interval.to - interval.from > reference.to - reference.from) {
-            // Reduce
-            const minSize = Common.parseExpression(rule.interval.minSize, expressionEnv);
-            const toLowerBound = (rule.interval.to !== null && rule.interval.to.lowerBound !== null) ?
-                                    rule.interval.to.lowerBound : -Infinity;
-
-            interval.to = Math.max(reference.to, interval.from + minSize, toLowerBound);
-        }
-
-        if (Common.tryMatch(pattern, intervals).success) {
-            // Done. Do next interval.
-            continue;
-        }
-        
-
-        // "from" alignment failed. Try "to" alignment.
-        interval.to = reference.to;
-        interval.from = reference.to - (backupTo - backupFrom);
-
-        if (interval.to - interval.from < reference.to - reference.from) {
-            // Expand
-            const maxSize = Common.parseExpression(rule.interval.maxSize, expressionEnv);
-            const fromLowerBound = (rule.interval.from !== null && rule.interval.from.lowerBound !== null) ?
-                                    rule.interval.from.lowerBound : -Infinity;
-
-            interval.from = Math.max(reference.from, interval.to - maxSize, fromLowerBound);
-            //Expand it: "from" = max(r.from, p.to - p.maxSize, p.from.lowerBound)
-
-        } else if (interval.to - interval.from > reference.to - reference.from) {
-            // Reduce
-            const minSize = Common.parseExpression(rule.interval.minSize, expressionEnv);
-            const fromUpperBound = (rule.interval.from !== null && rule.interval.from.upperBound !== null) ?
-                                    rule.interval.from.upperBound : +Infinity;
-
-            interval.from = Math.min(reference.from, interval.to - minSize, fromUpperBound);
-            // Reduce it: "from" = min(r.from, p.to - p.minSize, p.from.upperBound)
-        }
-
-        if (Common.tryMatch(pattern, intervals).success) {
-            // Done. Do next interval.
-            continue;
-        }
-
-
-        // Failed. Restore the original interval.
-        interval.from = backupFrom;
-        interval.to = backupTo;
-    }
-}
-
-/**
- * Given an array of intervals, yields each endpoint in the provided order.
- */
-function *intervalsToPoints(intervals: Interval[]): IterableIterator<number> {
-    for (let iv of intervals) {
-        yield iv.from;
-        yield iv.to;
-    }
-}
-
-/**
- * Given an array of numbers, return the closest one to `target`.
- * Returns null if the array is empty.
- */
-function closestValue(values: number[], target: number): number | null {
-    if (values.length == 0) {
-        return null;
-    }
-
-    return values.reduce((prev, curr) => Math.abs(curr - target) < Math.abs(prev - target) ? curr : prev, Infinity);
 }
 
 function closestInterval(interval: Interval, intervals: Interval[]): Interval {
