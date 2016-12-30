@@ -346,7 +346,7 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
     if (result.feasible) {
         const output: Interval[] = [];
         for (let i = 0; i < pattern.length; i++) {
-            output.push({ from: result[`i${i}_from`], to: result[`i${i}_to`], data: undefined });
+            output.push({ from: result[`i${i}_from`] || 0, to: result[`i${i}_to`] || 0, data: undefined });
         }
         return output;
     } else {
