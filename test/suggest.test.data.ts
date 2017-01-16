@@ -53,23 +53,35 @@ export const test_data_1: {v1: Rule[], v2: Interval[], r: Interval[]}[] = [
         v1: [{interval: {name: "A",from: {lowerBound: 0,upperBound: 100},to: null,minSize: 1,maxSize: 50},followingSpace: null}],
         v2: [],
         r:  [{from: 0, to: 1, data: undefined}],
+    },
+    {
+        // two errors, one before the first interval, one after the second interval
+        v1: [{interval: {name: "A", from: {lowerBound: 10, upperBound: 50}, to: {lowerBound: 10, upperBound: 200}, minSize: 0, maxSize: 80}, followingSpace: {name: "sA", minSize: 1, maxSize: 20}},
+             {interval: {name: "B", from: null, to: {lowerBound: 1, upperBound: 200}, minSize: "80 - A", maxSize: "80 - A"}, followingSpace: null}],
+        v2: [{from: 8, to: 50, data: 'u'}, {from: 60, to: 120, data: 'v'}],
+        r:  [{from: 30, to: 50, data: undefined}, {from: 60, to: 120, data: undefined}],
     }
 ]
 
-export const test_data_2: {v1: Interval[], v2: Interval[], r: number}[] = [
+export const test_data_2: {v1: Interval[], v2: Interval[], r: number[]}[] = [
     {
         v1: [ { from: 9, to: 12, data: null }, { from: 14, to: 19, data: null } ],
         v2: [ { from: 9, to: 12, data: null }, { from: 14, to: 21, data: null } ],
-        r: 3
+        r: [2, 1, -20]
     },
     {
         v1: [ { from: 9, to: 11, data: null }, { from: 14, to: 20, data: null } ],
         v2: [ { from: 9, to: 12, data: null }, { from: 14, to: 21, data: null } ],
-        r: 4
+        r: [2, 2, -16]
     },
     {
         v1: [ { from: 9, to: 11, data: null }, { from: 14, to: 20, data: null } ],
         v2: [ { from: 9, to: 12, data: null } ],
-        r: 9
+        r: [7, 2, -14.25]
+    },
+    {
+        v1: [ { from: 9, to: 12, data: null }, { from: 14, to: 21, data: null } ],
+        v2: [ { from: 10, to: 11, data: null },{ from: 14, to: 21, data: null } ],
+        r: [2, 2, -10.5]
     }
 ]

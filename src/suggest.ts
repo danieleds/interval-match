@@ -34,7 +34,10 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
         // pattern[i] is associated with intervals[associations[i]]
         let associations: number[] = [];
         for (let i = 0; i < pattern.length; i++) {
-            associations.push(intervals.indexOf(closestInterval(result[i], intervals)));
+            associations.push(
+                intervals.indexOf(
+                    closestInterval(result[i],
+                                    intervals.filter((_, i) => associations.indexOf(i) === -1))));
         }
 
         /*
@@ -56,19 +59,50 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
         .sort((a, b) => Math.abs(a.current_value - a.stickTo) - Math.abs(b.current_value - b.stickTo));
 
         let lastError = errorMeasure(result, intervals);
-        for (let e of endpoints) {
-            e.sticky = true;
 
-            const candidateResult = generateIntervals(pattern, intervals, associations, endpoints.filter(v => v.sticky));
-            if (candidateResult === null) {
-                e.sticky = false;
-            } else {
-                const error = errorMeasure(candidateResult, intervals);
-                if (error < lastError) {
-                    result = candidateResult;
-                    lastError = error;
+        if (endpoints.length <= 4) {
+            // They are few, we can try all binary combinations...
+            const failingCombinations: typeof endpoints[] = [];
+            for (let e of powerset(endpoints)) {
+                // If one combination has been already tried unsuccessfully (infeasible), ignore the sets 'e' containing that combination.
+                if (failingCombinations.find(v => v.every(x => e.indexOf(x) >= 0))) {
+                    continue;
+                }
+
+                for (let ep of e) {
+                    ep.sticky = true;
+                }
+
+                const candidateResult = generateIntervals(pattern, intervals, associations, endpoints.filter(v => v.sticky));
+                if (candidateResult === null) {
+                    failingCombinations.push(e);
                 } else {
+                    const error = errorMeasure(candidateResult, intervals);
+                    if (isLessThan(error, lastError)) {
+                        result = candidateResult;
+                        lastError = error;
+                    }
+                }
+
+                for (let ep of e) {
+                    ep.sticky = false;
+                }
+            }
+        } else {
+            for (let e of endpoints) {
+                e.sticky = true;
+
+                const candidateResult = generateIntervals(pattern, intervals, associations, endpoints.filter(v => v.sticky));
+                if (candidateResult === null) {
                     e.sticky = false;
+                } else {
+                    const error = errorMeasure(candidateResult, intervals);
+                    if (isLessThan(error, lastError)) {
+                        result = candidateResult;
+                        lastError = error;
+                    } else {
+                        e.sticky = false;
+                    }
                 }
             }
         }
@@ -363,8 +397,8 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
  * Get a measure of the difference between the provided intervals.
  */
 export function errorMeasure(intervals1: Interval[], intervals2: Interval[]) {
-    const a = flattenIntervals(intervals1);
-    const b = flattenIntervals(intervals2);
+    let a = flattenIntervals(intervals1);
+    let b = flattenIntervals(intervals2);
 
     /*
         Count the non-overlapping sections: they're errors
@@ -388,6 +422,14 @@ export function errorMeasure(intervals1: Interval[], intervals2: Interval[]) {
 
     let i = 0;
     let j = 0;
+
+    // a must always be the first to begin. If that's not the case, exchange them.
+    if (a.length > 0 && b.length > 0 && b[0].from < a[0].from) {
+        const tmp = a;
+        a = b;
+        b = tmp;
+    }
+
     while (i < a.length) {
 
         let left_i = a[i].from;
@@ -449,9 +491,26 @@ export function errorMeasure(intervals1: Interval[], intervals2: Interval[]) {
         j++;
     }
 
-    // Increment the cost of each interval by 1: at the same cost, we prefer contiguous intervals.
-    return errors.filter(v => v.from < v.to)
-                 .reduce((sum, curr) => sum + Math.abs(curr.to - curr.from) + 1, 0);
+    const normalized = errors.filter(v => v.from < v.to);
+
+    return [
+        normalized.reduce((sum, curr) => sum + Math.abs(curr.to - curr.from), 0),
+        // at the same cost, we prefer contiguous intervals
+        normalized.length,
+        // prefer when errors are located at the end
+        normalized.length > 0 ? -normalized.reduce((sum, curr) => sum + curr.to + curr.from, 0) / (2*normalized.length) : 0
+    ];
+}
+
+function isLessThan(errMeasure1: any[], errMeasure2: any[]) {
+    for (let i = 0; i < Math.min(errMeasure1.length, errMeasure2.length); i++) {
+        if (errMeasure1[i] < errMeasure2[i]) {
+            return true;
+        } else if (errMeasure1[i] > errMeasure2[i]) {
+            return false;
+        }
+    }
+    return false;
 }
 
 /**
@@ -582,5 +641,18 @@ function mapSum<T>(map: Map<T, number>, key: T, val: number) {
         map.set(key, map.get(key) + val);
     } else {
         map.set(key, val);
+    }
+}
+
+function *powerset<T>(array: T[]) {
+    const len = Math.pow(2, array.length);
+
+    const mask = [1];
+    for (let i = 1; i < array.length; i++) {
+        mask[i] = 2 * mask[i-1];
+    }
+
+    for (let n = 0; n < len; n++) {
+        yield array.filter((_, i) => (n & mask[i]));
     }
 }

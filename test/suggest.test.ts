@@ -19,6 +19,9 @@ describe('errorMeasure', () => {
         it(`errorMeasure #${i}`, () => {
             assert.assertMap(errorMeasure(testData.v1, testData.v2), testData.r);
         })
+        it(`errorMeasure #${i} commutativity`, () => {
+            assert.assertMap(errorMeasure(testData.v2, testData.v1), testData.r);
+        })
     })
 
 })
