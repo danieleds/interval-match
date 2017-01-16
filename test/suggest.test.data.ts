@@ -55,6 +55,13 @@ export const test_data_1: {v1: Rule[], v2: Interval[], r: Interval[]}[] = [
         r:  [{from: 0, to: 1, data: undefined}],
     },
     {
+        // not enough intervals
+        v1: [{interval: {name:"A", from: {lowerBound:5, upperBound:10}, to: {lowerBound:15, upperBound:20}, minSize:0, maxSize:100}, followingSpace:null},
+             {interval: {name:"B", from: {lowerBound:40, upperBound:40}, to: null, minSize:5, maxSize:30}, followingSpace:null}],
+        v2: [{from: 5, to: 15, data: null}],
+        r:  [{from: 5, to: 15, data: undefined}, {from: 40, to: 45, data: undefined}],
+    },,
+    {
         // two errors, one before the first interval, one after the second interval
         v1: [{interval: {name: "A", from: {lowerBound: 10, upperBound: 50}, to: {lowerBound: 10, upperBound: 200}, minSize: 0, maxSize: 80}, followingSpace: {name: "sA", minSize: 1, maxSize: 20}},
              {interval: {name: "B", from: null, to: {lowerBound: 1, upperBound: 200}, minSize: "80 - A", maxSize: "80 - A"}, followingSpace: null}],

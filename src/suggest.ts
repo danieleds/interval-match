@@ -34,10 +34,14 @@ export function suggest(pattern: Rule[], intervals: Interval[], ordered = false)
         // pattern[i] is associated with intervals[associations[i]]
         let associations: number[] = [];
         for (let i = 0; i < pattern.length; i++) {
-            associations.push(
-                intervals.indexOf(
-                    closestInterval(result[i],
-                                    intervals.filter((_, i) => associations.indexOf(i) === -1))));
+            // First, search only in the intervals which were not already matched.
+            // Then, if we're left without intervals, search in all of them.
+            let set = intervals.filter((_, i) => associations.indexOf(i) === -1);
+            if (set.length === 0) {
+                set = intervals;
+            }
+
+            associations.push(intervals.indexOf(closestInterval(result[i], set)));
         }
 
         /*
