@@ -1,6 +1,6 @@
 const assert = require('assert6');
 import { IntervalMatch } from '../src/index'
-import { errorMeasure } from '../src/suggest'
+import { defaultErrorMeasure } from '../src/suggest'
 import * as data from './suggest.test.data'
 
 describe('suggest', () => {
@@ -17,10 +17,10 @@ describe('errorMeasure', () => {
 
     data.test_data_2.forEach((testData, i) => {
         it(`errorMeasure #${i}`, () => {
-            assert.assertMap(errorMeasure(testData.v1, testData.v2), testData.r);
+            assert.assertMap(defaultErrorMeasure(testData.v1, testData.v2), testData.r);
         })
         it(`errorMeasure #${i} commutativity`, () => {
-            assert.assertMap(errorMeasure(testData.v2, testData.v1), testData.r);
+            assert.assertMap(defaultErrorMeasure(testData.v2, testData.v1), testData.r);
         })
     })
 

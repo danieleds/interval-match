@@ -18,13 +18,36 @@ type StickyEndpoint = {
     stickTo: number
 };
 
-export function suggest(pattern: Rule[], intervals: Interval[], ordered = false): Interval[] | null {
+export type ErrorMeasure = null | ((suggestion: Interval[], reference: Interval[]) => number[])
+
+/**
+ * Returns a set of valid intervals for the specified pattern.
+ * The result will be as close as possible to the provided intervals,
+ * according to the specified error measure.
+ * 
+ * First, the algorithm will search sets of intervals which minimize the total
+ * difference with respect to the reference intervals. Then, errorMeasure
+ * is applied to find the best set of intervals between those (e.g., with the
+ * error size being equal, we might prefer intervals where the error is
+ * located at the end, or maybe we might prefer errors that are contiguous).
+ * 
+ * @param pattern      The pattern to satisfy
+ * @param intervals    List of reference intervals in increasing order.
+ * @param errorMeasure A function which returns a measure of the error of
+ *                     a suggestion with respect to the reference intervals.
+ *                     The return value is an array where the first position is
+ *                     the most significant value.
+ */
+export function suggest(pattern: Rule[], intervals: Interval[], errorMeasure: ErrorMeasure = null): Interval[] | null {
     if (pattern.length === 0) {
         return [];
     }
 
+    if (!errorMeasure) {
+        errorMeasure = defaultErrorMeasure;
+    }
+
     // FIXME We should check that the expressions are linear
-    // FIXME Order intervals?
     
     let result = generateIntervals(pattern, intervals, null, []);
 
@@ -400,7 +423,7 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
 /**
  * Get a measure of the difference between the provided intervals.
  */
-export function errorMeasure(intervals1: Interval[], intervals2: Interval[]) {
+export function defaultErrorMeasure(intervals1: Interval[], intervals2: Interval[]) {
     let a = flattenIntervals(intervals1);
     let b = flattenIntervals(intervals2);
 
