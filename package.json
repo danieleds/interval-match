@@ -24,9 +24,11 @@
     "test": "mocha -R spec lib/test/*.test.js"
   },
   "devDependencies": {
+    "@types/mocha": "^2.2.40",
+    "@types/node": "^7.0.12",
     "assert6": "^1.0.1",
     "mocha": "^3.0.2",
-    "typescript": "^2.0.2"
+    "typescript": "^2.2.2"
   },
   "files": [
     "lib/src"

@@ -325,7 +325,7 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
         // rule.interval.minSize
         if (rule.interval) {
             const coefficients = decomposeExpression(rule.interval.minSize, pattern);
-            const constant = coefficients.get('');
+            const constant = coefficients.get('')!;
             coefficients.delete('');
 
             if (constant > -Infinity) {
@@ -342,7 +342,7 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
         // rule.interval.maxSize
         if (rule.interval) {
             const coefficients = decomposeExpression(rule.interval.maxSize, pattern);
-            const constant = coefficients.get('');
+            const constant = coefficients.get('')!;
             coefficients.delete('');
 
             if (constant < Infinity) {
@@ -359,7 +359,7 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
         // rule.followingSpace.minSize
         if (rule.followingSpace) {
             const coefficients = decomposeExpression(rule.followingSpace.minSize, pattern);
-            const constant = coefficients.get('');
+            const constant = coefficients.get('')!;
             coefficients.delete('');
 
             if (constant > -Infinity) {
@@ -376,7 +376,7 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
         // rule.followingSpace.maxSize
         if (rule.followingSpace) {
             const coefficients = decomposeExpression(rule.followingSpace.maxSize, pattern);
-            const constant = coefficients.get('');
+            const constant = coefficients.get('')!;
             coefficients.delete('');
 
             if (constant < Infinity) {
@@ -595,6 +595,7 @@ function closestInterval(interval: Interval, intervals: Interval[]): Interval {
  *     C is 1 => 1*(C) = 1*(C.to - C.from) = 1*(i1_to - i1_from) = 1*i1_to -1*i1_from
  *     D is 0, ignored
  * 
+ * The empty key (constant) is guaranteed to be present.
  */
 function decomposeExpression(expression: number|string, pattern: Rule[]) {
     return explodeIdentifiers(extractCoefficients(expression), pattern);
@@ -637,6 +638,8 @@ function extractCoefficients(expression: number|string) {
  * If the identifier is a followingSpace (e.g. 'B'), then it expresses the difference in terms of the preceding and following interval.
  * 
  *     Map {'i0_from' => 0, 'i0_to' => -2, 'i1_from' => -3 + 2, 'i1_to' => 3, '' => 7 }
+ *
+ * The empty key (constant) is guaranteed to be present.
  */
 function explodeIdentifiers(coefficients: Map<string, number>, pattern: Rule[]) {
     const result = new Map<string, number>();
@@ -644,19 +647,19 @@ function explodeIdentifiers(coefficients: Map<string, number>, pattern: Rule[]) 
         const rule = pattern[i];
 
         if (rule.interval.name !== '' && coefficients.has(rule.interval.name)) {
-            mapSum(result, `i${i}_to`, coefficients.get(rule.interval.name));
-            mapSum(result, `i${i}_from`, -coefficients.get(rule.interval.name));
+            mapSum(result, `i${i}_to`, coefficients.get(rule.interval.name)!);
+            mapSum(result, `i${i}_from`, -coefficients.get(rule.interval.name)!);
         }
 
         if (rule.followingSpace) {
             if (rule.followingSpace.name !== '' && coefficients.has(rule.followingSpace.name)) {
-                mapSum(result, `i${i}_to`, -coefficients.get(rule.followingSpace.name));
-                mapSum(result, `i${i+1}_from`, coefficients.get(rule.followingSpace.name));
+                mapSum(result, `i${i}_to`, -coefficients.get(rule.followingSpace.name)!);
+                mapSum(result, `i${i+1}_from`, coefficients.get(rule.followingSpace.name)!);
             }
         }
     }
 
-    result.set('', coefficients.get(''));
+    result.set('', coefficients.get('') || 0);
     return result;
 }
 
@@ -665,7 +668,7 @@ function explodeIdentifiers(coefficients: Map<string, number>, pattern: Rule[]) 
  */
 function mapSum<T>(map: Map<T, number>, key: T, val: number) {
     if (map.has(key)) {
-        map.set(key, map.get(key) + val);
+        map.set(key, map.get(key)! + val);
     } else {
         map.set(key, val);
     }
