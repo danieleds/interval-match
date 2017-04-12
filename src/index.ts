@@ -10,7 +10,8 @@ export module IntervalMatch
     /**
      * Return the first satisfied match.
      * @param intervals The set of non-overlapping intervals.
-     * @param ordered Set this to true if the provided intervals are already ordered. // FIXME ordered how?
+     * @param ordered Set this to true if the provided intervals are already
+     *        in ascending order on (from, to).
      */
     export function match(pattern: Rule[], intervals: Interval[], ordered = false): MatchResult {
         if (pattern.length === 0 || intervals.length === 0) {
