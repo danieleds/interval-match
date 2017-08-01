@@ -424,18 +424,26 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
  * Get a measure of the difference between the provided intervals.
  */
 export function defaultErrorMeasure(intervals1: Interval[], intervals2: Interval[]) {
-    // Count the non-overlapping sections, which are errors
-    const errors = nonIntersectingIntervals(intervals1, intervals2);
+    return defaultCostFunction(nonIntersectingIntervals(intervals1, intervals2))
+}
 
+export function defaultCostFunction(errors: {from: number, to: number}[]) {
     return [
+        // prefer a small total error
         errors.reduce((sum, curr) => sum + Math.abs(curr.to - curr.from), 0),
-        // at the same cost, we prefer contiguous intervals
+        // at the same cost, we prefer contiguous errors
         errors.length,
         // prefer when errors are located at the end
         errors.length > 0 ? -errors.reduce((sum, curr) => sum + curr.to + curr.from, 0) / (2*errors.length) : 0
     ];
 }
 
+/**
+ * Given a pair of interval arrays, compute the sub-intervals which are not intersecting.
+ * The parameters are commutative.
+ * @param intervals1 
+ * @param intervals2 
+ */
 export function nonIntersectingIntervals(intervals1: Interval[], intervals2: Interval[]) {
     let a = flattenIntervals(intervals1);
     let b = flattenIntervals(intervals2);

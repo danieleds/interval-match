@@ -4,6 +4,7 @@ import * as Suggest from './suggest'
 
 export * from './types'
 export { isSpaceInterval } from './common'
+export { defaultCostFunction, nonIntersectingIntervals } from './suggest'
 
 export module IntervalMatch
 {
@@ -27,7 +28,7 @@ export module IntervalMatch
         return Common.tryMatch(pattern, intervals);
     }
 
-    export function suggest(pattern: Rule[], intervals: Interval[], ordered = false): Interval[] | null {
+    export function suggest(pattern: Rule[], intervals: Interval[], ordered = false, errorMeasure: Suggest.ErrorMeasure = null): Interval[] | null {
         if (pattern.length === 0) {
             return [];
         }
@@ -38,6 +39,6 @@ export module IntervalMatch
                 .sort((a, b) => a.from - b.from);
         }
 
-        return Suggest.suggest(pattern, intervals);
+        return Suggest.suggest(pattern, intervals, errorMeasure);
     }
 }
