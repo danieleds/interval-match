@@ -424,11 +424,24 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
  * Get a measure of the difference between the provided intervals.
  */
 export function defaultErrorMeasure(intervals1: Interval[], intervals2: Interval[]) {
+    // Count the non-overlapping sections, which are errors
+    const errors = nonIntersectingIntervals(intervals1, intervals2);
+
+    return [
+        errors.reduce((sum, curr) => sum + Math.abs(curr.to - curr.from), 0),
+        // at the same cost, we prefer contiguous intervals
+        errors.length,
+        // prefer when errors are located at the end
+        errors.length > 0 ? -errors.reduce((sum, curr) => sum + curr.to + curr.from, 0) / (2*errors.length) : 0
+    ];
+}
+
+export function nonIntersectingIntervals(intervals1: Interval[], intervals2: Interval[]) {
     let a = flattenIntervals(intervals1);
     let b = flattenIntervals(intervals2);
 
     /*
-        Count the non-overlapping sections: they're errors
+        Count the non-overlapping sections ("errors")
         Possible cases of interest for interval i:
 
               i-1                   current i                  i+1
@@ -518,15 +531,7 @@ export function defaultErrorMeasure(intervals1: Interval[], intervals2: Interval
         j++;
     }
 
-    const normalized = errors.filter(v => v.from < v.to);
-
-    return [
-        normalized.reduce((sum, curr) => sum + Math.abs(curr.to - curr.from), 0),
-        // at the same cost, we prefer contiguous intervals
-        normalized.length,
-        // prefer when errors are located at the end
-        normalized.length > 0 ? -normalized.reduce((sum, curr) => sum + curr.to + curr.from, 0) / (2*normalized.length) : 0
-    ];
+    return errors.filter(v => v.from < v.to);
 }
 
 function isLessThan(errMeasure1: any[], errMeasure2: any[]) {
