@@ -489,7 +489,7 @@ export function nonIntersectingIntervals(intervals1: Interval[], intervals2: Int
                 errors.push({from: a[i-1].to, to: b[j].to});
             } else if (i > 0 && b[j].from <= a[i-1].to && a[i].from <= b[j].to && b[j].to <= a[i].to) {
                 // (1)
-                errors.push({from: a[i-1].to, to: b[j].to});
+                errors.push({from: a[i-1].to, to: a[i].from});
                 left_i = b[j].to;
             } else if (i > 0 && b[j].from <= a[i-1].to && a[i].to <= b[j].to) {
                 // (2)
@@ -509,11 +509,12 @@ export function nonIntersectingIntervals(intervals1: Interval[], intervals2: Int
                 left_i = b[j].to;
             } else if (a[i].from <= b[j].from && b[j].from <= a[i].to && (i+1>=a.length || b[j].to <= a[i+1].from)) {
                 // (6)
+                errors.push({from: left_i, to: b[j].from})
                 errors.push({from: a[i].to, to: b[j].to})
-                left_i = a[i].to;
+                left_i = b[j].to;
             } else if (i+1<a.length && a[i].from <= b[j].from && b[j].from <= a[i].to && a[i+1].from <= b[j].to) {
                 // (7)
-                errors.push({from: a[i].to, to: a[i+1].from})
+                errors.push({from: left_i, to: b[j].from})
                 left_i = a[i].to;
                 break;
             }

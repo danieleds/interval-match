@@ -1,6 +1,6 @@
 const assert = require('assert6');
 import { IntervalMatch } from '../src/index'
-import { defaultErrorMeasure } from '../src/suggest'
+import { defaultErrorMeasure, nonIntersectingIntervals } from '../src/suggest'
 import * as data from './suggest.test.data'
 
 describe('suggest', () => {
@@ -21,6 +21,16 @@ describe('errorMeasure', () => {
         })
         it(`errorMeasure #${i} commutativity`, () => {
             assert.assertMap(defaultErrorMeasure(testData.v2, testData.v1), testData.r);
+        })
+    })
+
+})
+
+describe('nonIntersectingIntervals', () => {
+
+    data.test_data_3.forEach((testData, i) => {
+        it(`nonIntersectingIntervals #${i}`, () => {
+            assert.assertMap(nonIntersectingIntervals(testData.v1, testData.v2), testData.r);
         })
     })
 
