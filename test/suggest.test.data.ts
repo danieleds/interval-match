@@ -92,3 +92,26 @@ export const test_data_2: {v1: Interval[], v2: Interval[], r: number[]}[] = [
         r: [2, 2, -10.5]
     }
 ]
+
+export const test_data_3: {v1: Interval[], v2: Interval[], r: {from: number, to: number}[]}[] = [
+    {
+        v1: [ { from: 50, to: 131, data: null }, { from: 139, to: 150, data: null } ],
+        v2: [ { from: 70, to: 139, data: null }, { from: 144, to: 160, data: null } ],
+        r: [ { from: 50, to: 70 }, { from: 131, to: 139 }, { from: 139, to: 144 }, { from: 150, to: 160 } ]
+    },
+    {
+        v1: [ { from: 50, to: 131, data: null }, { from: 139, to: 150, data: null } ],
+        v2: [ { from: 40, to: 100, data: null }, { from: 144, to: 160, data: null } ],
+        r: [ { from: 40, to: 50 }, { from: 100, to: 131 }, { from: 139, to: 144 }, { from: 150, to: 160 } ]
+    },
+    {
+        v1: [ { from: 50, to: 131, data: null }, { from: 139, to: 150, data: null } ],
+        v2: [ { from: 70, to: 190, data: null } ],
+        r: [ { from: 50, to: 70 }, { from: 131, to: 139 }, { from: 150, to: 190 } ]
+    },
+    {
+        v1: [ { from: 10, to: 30, data: null }, { from: 50, to: 70, data: null }, { from: 80, to: 100, data: null } ],
+        v2: [ { from: 20, to: 90, data: null } ],
+        r: [ { from: 10, to: 20 }, { from: 30, to: 50 }, { from: 70, to: 80 }, { from: 90, to: 100 } ]
+    }
+]
