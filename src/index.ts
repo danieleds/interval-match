@@ -4,7 +4,7 @@ import * as Suggest from './suggest'
 
 export * from './types'
 export { isSpaceInterval } from './common'
-export { defaultCostFunction, nonIntersectingIntervals } from './suggest'
+export { nonIntersectingIntervals } from './suggest'
 
 export module IntervalMatch
 {

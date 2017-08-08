@@ -67,6 +67,13 @@ export const test_data_1: {v1: Rule[], v2: Interval[], r: Interval[]}[] = [
              {interval: {name: "B", from: null, to: {lowerBound: 1, upperBound: 200}, minSize: "80 - A", maxSize: "80 - A"}, followingSpace: null}],
         v2: [{from: 8, to: 50, data: 'u'}, {from: 60, to: 120, data: 'v'}],
         r:  [{from: 30, to: 50, data: undefined}, {from: 60, to: 120, data: undefined}],
+    },
+    {
+        // lack of from/to constraints
+        v1: [{interval: {name: "A", from: null, to: null, minSize: 0, maxSize: 28}, followingSpace: null},
+             {interval: {name: "B", from: null, to: null, minSize: "28 - A", maxSize: "28 - A"}, followingSpace: null}],
+        v2: [{from: 37, to: 46, data: 'u'}, {from: 49, to: 66, data: 'v'}],
+        r:  [{from: 37, to: 46, data: undefined}, {from: 49, to: 68, data: undefined}],
     }
 ]
 
@@ -74,22 +81,22 @@ export const test_data_2: {v1: Interval[], v2: Interval[], r: number[]}[] = [
     {
         v1: [ { from: 9, to: 12, data: null }, { from: 14, to: 19, data: null } ],
         v2: [ { from: 9, to: 12, data: null }, { from: 14, to: 21, data: null } ],
-        r: [2, 1, -20]
+        r: [2, 1, -3, -20]
     },
     {
         v1: [ { from: 9, to: 11, data: null }, { from: 14, to: 20, data: null } ],
         v2: [ { from: 9, to: 12, data: null }, { from: 14, to: 21, data: null } ],
-        r: [2, 2, -16]
+        r: [2, 2, -2, -16]
     },
     {
         v1: [ { from: 9, to: 11, data: null }, { from: 14, to: 20, data: null } ],
         v2: [ { from: 9, to: 12, data: null } ],
-        r: [7, 2, -14.25]
+        r: [7, 2, -1, -14.25]
     },
     {
         v1: [ { from: 9, to: 12, data: null }, { from: 14, to: 21, data: null } ],
         v2: [ { from: 10, to: 11, data: null },{ from: 14, to: 21, data: null } ],
-        r: [2, 2, -10.5]
+        r: [2, 2, -2, -10.5]
     }
 ]
 

@@ -49,7 +49,7 @@ export function suggest(pattern: Rule[], intervals: Interval[], errorMeasure: Er
 
     // FIXME We should check that the expressions are linear
     
-    let result = generateIntervals(pattern, intervals, null, []);
+    let result = generateIntervals(pattern, []);
 
     if (result !== null && intervals.length > 0) {
 
@@ -100,7 +100,7 @@ export function suggest(pattern: Rule[], intervals: Interval[], errorMeasure: Er
                     ep.sticky = true;
                 }
 
-                const candidateResult = generateIntervals(pattern, intervals, associations, endpoints.filter(v => v.sticky));
+                const candidateResult = generateIntervals(pattern, endpoints.filter(v => v.sticky));
                 if (candidateResult === null) {
                     failingCombinations.push(e);
                 } else {
@@ -119,7 +119,7 @@ export function suggest(pattern: Rule[], intervals: Interval[], errorMeasure: Er
             for (let e of endpoints) {
                 e.sticky = true;
 
-                const candidateResult = generateIntervals(pattern, intervals, associations, endpoints.filter(v => v.sticky));
+                const candidateResult = generateIntervals(pattern, endpoints.filter(v => v.sticky));
                 if (candidateResult === null) {
                     e.sticky = false;
                 } else {
@@ -138,27 +138,25 @@ export function suggest(pattern: Rule[], intervals: Interval[], errorMeasure: Er
     return result;
 }
 
+
+/**
+ * Given a set of intervals, returns the list of their endpoints ('from' and 'to' values).
+ * If the intervals are sorted and positive (from <= to), then the output is still sorted.
+ */
+function endpoints(intervals: Interval[]): number[] {
+    return [].concat.apply([], intervals.map(v => [v.from, v.to]))
+}
+
 /**
  * Generate a set of intervals matching the specified pattern and close to the provided intervals.
  * 
  * @param pattern       The pattern from which to generate intervals
- * @param intervals     The generated intervals will be as close as possible to these intervals
- * @param associations  Associate each rule of `pattern` to an interval of `intervals`. The length of this
- *                      array must be equal to that of `pattern`. If it is null, it is considered as an
- *                      array of all null elements.
- *                      For example, if this parameter is `[3, null, 2]`, it means that the first
- *                      rule is associated with the interval at index 3, the second rule with nothing
- *                      and the third rule with the interval at index 2.
  * @param stickyEndpoints  An array which contains a set of endpoints for which to force a specified value.
  */
-function generateIntervals(pattern: Rule[], intervals: Interval[], associations: number[]|null, stickyEndpoints: StickyEndpoint[]): Interval[] | null
+function generateIntervals(pattern: Rule[], stickyEndpoints: StickyEndpoint[]): Interval[] | null
 {
     if (pattern.length === 0) {
         return [];
-    }
-
-    if (associations === null) {
-        associations = Array(pattern.length).fill(null);
     }
 
     /*
@@ -168,23 +166,20 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
     What we try to minimize is:
 
         * The length of the intervals
-        * The difference with the provided intervals
+        * The distance to the provided endpoints
 
     We can do the former by using an objective function like the following:
 
         min: (i0_to - i0_from) + (i1_to - i1_from) + ... + (in_to - in_from)
 
-    And we can partially do the latter by using an objective function like the following:
+    And we can do the latter by using an objective function like the following:
 
-        min: |i0_from - match0.from| + |i0_to - match0.to| + ... + |in_from - matchn.from| + |in_to - matchn.to|
+        min: |i0_from - endpoint0.from| + |i0_to - endpoint0.to| + ... + |i(n)_from - endpoint(n).from| + |i(n)_to - endpoint(n).to|
 
     The names `i(k)_from` and `i(k)_to` represent variables in our linear programming problem. These are the
     values that we want to find, as they describe resp. the start and the end of the k-th interval.
 
-    We scan the provided intervals for matches with our pattern. The names `match(k).from` and
-    `match(k).to` refer to the interval that matched the k-th rule in the pattern. As we have seen,
-    we use these to generate results that are close to the provided intervals.
-
+    The name `endpoint(n)` is a constant and refers to the endpoint whose pattern_index = n.
 
     Ok, so we have an objective function. Let's see what the constraints are.
 
@@ -232,67 +227,59 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
     */
 
 
-    // Get the longest match, and filter out the space intervals
-    const longestMatch: Interval[] = Common.tryMatch(pattern, intervals).result.filter(v => !Common.isSpaceInterval(v));
 
     // Let's build the objective function.
     const absoluteInequalities: string[] = []; // Additional inequalities for absolute values
     const coefficients = new Map([['', 0]]);
+
+    // TODO Is this needed?
     for (let i = 0; i < pattern.length; i++) {
-        const rule = pattern[i];
+        // Minimize the size of the intervals
+        //    i(k)_to - i(k)_from
+        mapSum(coefficients, `i${i}_to`, 1);
+        mapSum(coefficients, `i${i}_from`, -1);
+    }
 
-        // Minimize the difference with already matching intervals
-        if (i < longestMatch.length || associations[i] !== null) {
-            const match = associations[i] === null ? longestMatch[i] : intervals[associations[i]];
+    // Reduce the distance to the endpoints
+    for (let e of stickyEndpoints) {
+        /*
+            We want to insert the following into the objective function to be minimized:
 
-            /*
-                We want to insert the following into the objective function to be minimized:
+                2*|i(k)_from - stickTo(k)_from| + |i(k)_to - stickTo(k)_to|
 
-                    2*|i(k)_from - match.from| + |i(k)_to - match.to|
+            But we can't use that because of the absolute value. We need to add extra inequalities
+            to simulate an absolute operator. We exploit the following property:
 
-                But we can't use that because of the absolute value. We need to add extra inequalities
-                to simulate an absolute operator. We exploit the following property:
+                min |x| + |y| + ...
+                Ax <= b
 
-                    min |x| + |y| + ...
-                    Ax <= b
+            is equivalent to
 
-                is equivalent to
+                min t1 + t2 + ...
+                    x <= t1
+                -x <= t1
+                    y <= t2
+                -y <= t2
+                ...
+                Ax <= b
 
-                    min t1 + t2 + ...
-                     x <= t1
-                    -x <= t1
-                     y <= t2
-                    -y <= t2
-                    ...
-                    Ax <= b
+            See also http://math.stackexchange.com/questions/623568/minimizing-the-sum-of-absolute-values-with-a-linear-solver
 
-                See also http://math.stackexchange.com/questions/623568/minimizing-the-sum-of-absolute-values-with-a-linear-solver
-
-                (you can observe that t1, t2, etc will always be positive).
+            (you can observe that t1, t2, etc will always be positive).
 
 
-                We have the multiplicative constant 2 because we can't assign the same weight to
-                the distance of the "from" endpoint and the distance of the "to" endpoint, otherwise
-                the resulting interval could be in the middle. By doubling the weight of the "from"
-                endpoint, we ensure that the "from" endpoint of the generated interval will be as
-                close as possible to the original "from" endpoint, and from there the "to" endpoint
-                can move as needed.
-            */
+            We have the multiplicative constant 2 because we can't assign the same weight to
+            the distance of the "from" endpoint and the distance of the "to" endpoint, otherwise
+            the resulting interval could be in the middle. By doubling the weight of the "from"
+            endpoint, we ensure that the "from" endpoint of the generated interval will be as
+            close as possible to the sticky "from" endpoint, and from there the "to" endpoint
+            can move as needed.
+        */
 
-            mapSum(coefficients, `absDiff_i${i}_from`, 2);
-            mapSum(coefficients, `absDiff_i${i}_to`, 1);
-
-            absoluteInequalities.push(`i${i}_from - absDiff_i${i}_from <= ${match.from}`);
-            absoluteInequalities.push(`i${i}_from + absDiff_i${i}_from >= ${match.from}`);
-            absoluteInequalities.push(`i${i}_to - absDiff_i${i}_to <= ${match.to}`);
-            absoluteInequalities.push(`i${i}_to + absDiff_i${i}_to >= ${match.to}`);
-
-        } else {
-            // Minimize the size of the intervals
-            //    i(k)_to - i(k)_from
-            mapSum(coefficients, `i${i}_to`, 1);
-            mapSum(coefficients, `i${i}_from`, -1);
-        }
+        const varName = `i${e.pattern_index}_` + (e.left ? 'from' : 'to')
+        mapSum(coefficients, `absDiff_${varName}`, e.left ? 2 : 1);
+        absoluteInequalities.push(`${varName} - absDiff_${varName} <= ${e.stickTo}`);
+        absoluteInequalities.push(`${varName} + absDiff_${varName} >= ${e.stickTo}`);
     }
 
     let model = ['min: ' + [...coefficients].map(([name,val]) => `+ ${val} ${name}`).join(' ')];
@@ -391,19 +378,15 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
         }
     }
 
-    // Constraints for sticky endpoints
-    for (let e of stickyEndpoints) {
-        if (e.left) {
-            model.push(`i${e.pattern_index}_from = ${e.stickTo}`);
-        } else {
-            model.push(`i${e.pattern_index}_to = ${e.stickTo}`);
-        }
-    }
-
     // Constraints for positivity of i(k)_from and positivity of interval length
     for (let i = 0; i < pattern.length; i++) {
         model.push(`i${i}_from >= 0`);
         model.push(`i${i}_to - i${i}_from >= 0`);
+    }
+
+    // Constraints to enforce the order of the intervals
+    for (let i = 1; i < pattern.length; i++) {
+        model.push(`i${i}_from - i${i-1}_to >= 0`);
     }
 
     const structured = lpsolver.ReformatLP(model);
@@ -424,15 +407,18 @@ function generateIntervals(pattern: Rule[], intervals: Interval[], associations:
  * Get a measure of the difference between the provided intervals.
  */
 export function defaultErrorMeasure(intervals1: Interval[], intervals2: Interval[]) {
-    return defaultCostFunction(nonIntersectingIntervals(intervals1, intervals2))
-}
+    const errors = nonIntersectingIntervals(intervals1, intervals2);
 
-export function defaultCostFunction(errors: {from: number, to: number}[]) {
+    const endpoints1 = endpoints(intervals1);
+    const endpoinst2 = endpoints(intervals2)
+
     return [
         // prefer a small total error
         errors.reduce((sum, curr) => sum + Math.abs(curr.to - curr.from), 0),
         // at the same cost, we prefer contiguous errors
         errors.length,
+        // prefer a higher number of matching endpoints
+        -endpoints1.filter(e1 => endpoinst2.some(e2 => e1 === e2)).length,
         // prefer when errors are located at the end
         errors.length > 0 ? -errors.reduce((sum, curr) => sum + curr.to + curr.from, 0) / (2*errors.length) : 0
     ];
