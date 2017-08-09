@@ -143,7 +143,7 @@ export function suggest(pattern: Rule[], intervals: Interval[], errorMeasure: Er
  * Given a set of intervals, returns the list of their endpoints ('from' and 'to' values).
  * If the intervals are sorted and positive (from <= to), then the output is still sorted.
  */
-function endpoints(intervals: Interval[]): number[] {
+export function endpoints(intervals: Interval[]): number[] {
     return [].concat.apply([], intervals.map(v => [v.from, v.to]))
 }
 

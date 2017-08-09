@@ -4,7 +4,7 @@ import * as Suggest from './suggest'
 
 export * from './types'
 export { isSpaceInterval } from './common'
-export { nonIntersectingIntervals } from './suggest'
+export { nonIntersectingIntervals, endpoints } from './suggest'
 
 export module IntervalMatch
 {
