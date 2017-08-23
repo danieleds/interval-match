@@ -138,69 +138,6 @@ export function suggest(pattern: Rule[], intervals: Interval[], errorMeasure: Er
     return result;
 }
 
-export function suggestHighPrecision(pattern: Rule[], intervals: Interval[], errorMeasure: ErrorMeasure = null): Interval[] | null {
-    if (pattern.length === 0) {
-        return [];
-    }
-
-    if (!errorMeasure) {
-        errorMeasure = defaultErrorMeasure;
-    }
-
-    // FIXME We should check that the expressions are linear
-
-    // Compute all the possible endpoint associations
-    const possibleAssociations = Array.from(possibleEndpointAssociations(pattern.length, intervals))
-    
-    let result: Interval[] | null = null;
-    const failingCombinations: typeof possibleAssociations = [];
-    let lastError: number[] | null = null;
-
-    for (let e of possibleAssociations) {
-        // If one combination has been already tried unsuccessfully (infeasible), ignore the set 'e' if it contains that combination.
-        if (failingCombinations.find(f => f.every(x => e.some(ev => ev.left === x.left && ev.pattern_index === x.pattern_index && ev.stickTo === x.stickTo)))) {
-            continue;
-        }
-
-        const candidateResult = generateIntervals(pattern, e);
-        if (candidateResult === null) {
-            failingCombinations.push(e);
-        } else {
-            const error = errorMeasure(candidateResult, intervals);
-            if (lastError === null || isLessThan(error, lastError)) {
-                result = candidateResult;
-                lastError = error;
-            }
-        }
-    }
-
-    return result;
-}
-
-function *possibleEndpointAssociations(patternCount: number, intervals: Interval[]) {
-    const sets = limitedPowerset(endpoints(intervals), 2*patternCount)
-
-    for (let endpoints of sets) {
-        // NB: here endpoints.length <= patternCount
-        const patternEndpoints = Array(2*patternCount).fill(0).map((_, i) => ({
-            patternIndex: Math.floor(i/2),
-            isLeftEndpoint: i%2 === 0,
-        }))
-
-        // We have our set of endpoints. We have to decide how to distribute them.
-        // If their number is the same as the number of patterns (*2), then it's easy.
-        // Otherwise, if there are n missing endpoints, we have to decide which
-        // patterns to leave without a matching endpoint.
-        for (let p of exactPowerset(patternEndpoints, endpoints.length)) {
-            // NB: here endpoints.lenght == p.length
-            yield p.map((v, i) => ({
-                pattern_index: v.patternIndex,
-                left: v.isLeftEndpoint,
-                stickTo: endpoints[i]
-            }))
-        }
-    }
-}
 
 /**
  * Given a set of intervals, returns the list of their endpoints ('from' and 'to' values).
@@ -209,7 +146,6 @@ function *possibleEndpointAssociations(patternCount: number, intervals: Interval
 export function endpoints(intervals: Interval[]): number[] {
     return [].concat.apply([], intervals.map(v => [v.from, v.to]))
 }
-
 
 /**
  * Generate a set of intervals matching the specified pattern and close to the provided intervals.
@@ -748,38 +684,5 @@ function *powerset<T>(array: T[]) {
 
     for (let n = 0; n < len; n++) {
         yield array.filter((_, i) => (n & mask[i]));
-    }
-}
-
-/**
- * A powerset where only the sets of a maximum length are returned
- * @param array 
- * @param maxLength 
- */
-function *limitedPowerset<T>(array: T[], maxLength: number) {
-    const els = powerset(array);
-    let x = els.next();
-    while (!x.done) {
-        if (x.value.length <= maxLength) {
-            yield x.value;
-        }
-        x = els.next();
-    }
-}
-
-/**
- * A powerset where only the sets of the specified length are returned
- * FIXME: A more efficient implementation is possible for sure
- * @param array 
- * @param maxLength 
- */
-function *exactPowerset<T>(array: T[], exactLength: number) {
-    const els = powerset(array);
-    let x = els.next();
-    while (!x.done) {
-        if (x.value.length === exactLength) {
-            yield x.value;
-        }
-        x = els.next();
     }
 }
