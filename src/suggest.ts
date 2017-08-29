@@ -150,10 +150,10 @@ export function suggestHighPrecision(pattern: Rule[], intervals: Interval[], err
     // FIXME We should check that the expressions are linear
 
     // Compute all the possible endpoint associations
-    const possibleAssociations = Array.from(possibleEndpointAssociations(pattern.length, intervals))
+    const possibleAssociations = possibleEndpointAssociations(pattern.length, intervals)
     
     let result: Interval[] | null = null;
-    const failingCombinations: typeof possibleAssociations = [];
+    const failingCombinations: {pattern_index: number, left: boolean, stickTo: number}[][] = [];
     let lastError: number[] | null = null;
 
     for (let e of possibleAssociations) {
@@ -177,6 +177,16 @@ export function suggestHighPrecision(pattern: Rule[], intervals: Interval[], err
     return result;
 }
 
+/**
+ * The size of the result is 
+ *    sum (2*n choose i) * (2*p choose i), i=0 to 2*p
+ * 
+ *  = (2(n + p))! / ((2n)! * (2p)!)    for (2n)! * (2p)! <> 0
+ * 
+ * where n = intervals.count, p = patternCount.
+ * @param patternCount 
+ * @param intervals 
+ */
 function *possibleEndpointAssociations(patternCount: number, intervals: Interval[]) {
     const sets = limitedPowerset(endpoints(intervals), 2*patternCount)
 
