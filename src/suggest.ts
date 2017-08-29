@@ -181,7 +181,9 @@ export function suggestHighPrecision(pattern: Rule[], intervals: Interval[], err
  * The size of the result is 
  *    sum (2*n choose i) * (2*p choose i), i=0 to 2*p
  * 
- *  = (2(n + p))! / ((2n)! * (2p)!)    for n, p != 0
+ *      (2(n + p))!
+ *  = ---------------    for n, p != 0
+ *     (2n)! * (2p)!
  * 
  * where n = intervals.count, p = patternCount.
  * @param patternCount 
