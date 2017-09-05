@@ -4,7 +4,7 @@ import * as Suggest from './suggest'
 
 export * from './types'
 export { isSpaceInterval } from './common'
-export { nonIntersectingIntervals, endpoints } from './suggest'
+export { nonIntersectingIntervals, endpoints, expectedCost } from './suggest'
 
 export module IntervalMatch
 {
@@ -28,7 +28,29 @@ export module IntervalMatch
         return Common.tryMatch(pattern, intervals);
     }
 
-    export function suggest(pattern: Rule[], intervals: Interval[], ordered = false, errorMeasure: Suggest.ErrorMeasure = null): Interval[] | null {
+    /**
+     * 
+     * @param pattern 
+     * @param intervals 
+     * @param ordered 
+     * @param errorMeasure 
+     * @param maxCost The max cost allowed for a high precision suggestion.
+     *                If the actual cost will be greater than this value, a simple suggestion will be performed
+     *                instead. By default it is 0, meaning that a high precision suggestion is never performed.
+     */
+    export function suggest(pattern: Rule[], intervals: Interval[], ordered = false, errorMeasure: Suggest.ErrorMeasure = null, maxCost = 0): Interval[] | null {
+        if (pattern.length === 0) {
+            return [];
+        }
+
+        if (maxCost <= 0 || (maxCost < +Infinity && Suggest.expectedCost(pattern.length, intervals.length) > maxCost)) {
+            return suggestSimple(pattern, intervals, ordered, errorMeasure);
+        } else {
+            return suggestHighPrecision(pattern, intervals, ordered, errorMeasure);
+        }
+    }
+
+    export function suggestSimple(pattern: Rule[], intervals: Interval[], ordered = false, errorMeasure: Suggest.ErrorMeasure = null): Interval[] | null {
         if (pattern.length === 0) {
             return [];
         }
@@ -40,5 +62,19 @@ export module IntervalMatch
         }
 
         return Suggest.suggest(pattern, intervals, errorMeasure);
+    }
+
+    export function suggestHighPrecision(pattern: Rule[], intervals: Interval[], ordered = false, errorMeasure: Suggest.ErrorMeasure = null): Interval[] | null {
+        if (pattern.length === 0) {
+            return [];
+        }
+
+        if (!ordered) {
+            intervals = intervals
+                .sort((a, b) => a.to - b.to)
+                .sort((a, b) => a.from - b.from);
+        }
+
+        return Suggest.suggestHighPrecision(pattern, intervals, errorMeasure);
     }
 }

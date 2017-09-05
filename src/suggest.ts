@@ -215,6 +215,24 @@ function *possibleEndpointAssociations(patternCount: number, intervals: Interval
 }
 
 /**
+ * Compute the expected cost of suggestHighPrecision.
+ * It is the number of possible associations returned by possibleEndpointAssociations.
+ * @param patternCount 
+ * @param intervalCount 
+ */
+export function expectedCost(patternCount: number, intervalCount: number) {
+    if (patternCount == 0 || intervalCount == 0) {
+        return 1;
+    }
+
+    let sum = 0;
+    for (let i = 0; i <= 2*patternCount; i++) {
+        sum += binomial(2*intervalCount, i) * binomial(2*patternCount, i)
+    }
+    return sum;
+}
+
+/**
  * Given a set of intervals, returns the list of their endpoints ('from' and 'to' values).
  * If the intervals are sorted and positive (from <= to), then the output is still sorted.
  */
@@ -794,4 +812,34 @@ function *exactPowerset<T>(array: T[], exactLength: number) {
         }
         x = els.next();
     }
+}
+
+function binomial(n, k) {
+    if (k == 0) {
+        return 1
+    } else if (k > n) {
+        return 0
+    }
+
+    // step 1: a basic LUT with a few steps of Pascal's triangle
+    var binomials = [
+        [1],
+        [1, 1],
+        [1, 2, 1],
+        [1, 3, 3, 1],
+        [1, 4, 6, 4, 1]
+    ];
+
+    // step 2: a function that builds out the LUT if it needs to
+    while (n >= binomials.length) {
+        let s = binomials.length;
+        let nextRow: number[] = [];
+        nextRow[0] = 1;
+        for (let i = 1, prev = s - 1; i < s; i++) {
+            nextRow[i] = binomials[prev][i - 1] + binomials[prev][i];
+        }
+        nextRow[s] = 1;
+        binomials.push(nextRow);
+    }
+    return binomials[n][k];
 }
